@@ -144,10 +144,11 @@ if (isset($_GET["show"])) { // Je nach Menü-Auswahl werden verschiedene Sachen 
                 }
             }
             fclose($fh);
-
             if (file_exists($linkToTab.preg_replace('/\s+/', '', $_POST["event"]).".csv")) {// Wenn Tabelle existiert, dann
                 //Überschrift
                 echo "<h1>$eventName</h1><br>";
+                echo '<center><a href="index.php?show=lists">Zurück zur Auswahl</a></center>';
+
                 //download-Link
                 echo '<center><a href="'.$linkToTab.preg_replace('/\s+/', '', $_POST["event"]).'.csv" style="font-size: 0.8em;" download>.CSV-Datei zum download</a></center>';
                 //echo '<center><a href="'.$linkToTab.$_POST["event"].'.txt" style="font-size: 0.8em;" download>.TXT-Datei zum download</a></center>';
@@ -212,9 +213,8 @@ if (isset($_GET["show"])) { // Je nach Menü-Auswahl werden verschiedene Sachen 
                 $feedback = "Dateien haben nicht existiert";
             }
             // Zurück-Link
-            echo "<center>".$feedback."<br><br><a href='index.php?show=deleteList'>Zurück zum Listen-löschen</a></center>";
-        }
-        if (isset($_POST["send"])) { // Wenn Auswahl schon getroffen und noch nicht bestätigt:
+            echo "<center>".$feedback."<br><br><a href='index.php?show=deleteList'>Zurück zum Listen-löschen</a><br></center>";
+        } elseif (isset($_POST["send"])) { // Wenn Auswahl schon getroffen und noch nicht bestätigt:
             // Dateinamen aus events.txt lesen
             $fh = fopen('events.txt', 'r');
             $events ="";
@@ -269,9 +269,21 @@ if (isset($_GET["show"])) { // Je nach Menü-Auswahl werden verschiedene Sachen 
         closedir($myDirectory);
         // Wenn mind. eine Datei existiert, dann wird eine Liste mit den Dateien erstellt und ausgegeben.
         if (sizeof($files)>0) {
-            echo "<h1>Folgende Dateien sind noch vorhanden:</h1><div style='width:50%; margin: 0 25%;'><ul>";
+            echo "<h1>Folgende Dateien befinden sich im Ornder:</h1><div style='width:50%; margin: 0 25%;'><ul>";
             foreach ($files as $doc) {
-                echo "<li>$doc</li>";
+                // Eventname des Files suchen
+                $name = rtrim($doc, ".csv");
+                $nameOfFile = "";
+                $fh = fopen("events.txt", "r");
+                // Über alle Event-Zeilen iterieren
+                while ($line = fgets($fh)) {
+                    $t = explode("-", $line);
+                    if ($t[0] == $name) {
+                        $nameOfFile .= $t[1];
+                    }
+                }
+                fclose($fh);
+                echo "<li>$doc ($nameOfFile)</li>";
             }
             echo '</ul> </div>';
         }

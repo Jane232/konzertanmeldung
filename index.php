@@ -41,9 +41,9 @@ fclose($fh);
 // Eintragen des User-Inputs in CSV
 $eingetragen = "";
 if (isset($_POST["send"])) {
-    if (getLines($linkToSub.$_POST["event"]) < $maxZuschauer+1) {//Wenn Event noch nicht voll ist, dann:
+    if (getLines($linkToTab.$_POST["event"]) < $maxZuschauer+1) {//Wenn Event noch nicht voll ist, dann:
         // Nummer des Users im Event an 1. Stelle
-        $content = $contentCSV = getLines($linkToSub.$_POST["event"]);
+        $content = $contentCSV = getLines($linkToTab.$_POST["event"]);
         // Iterierung über alle POST-Vars
         foreach ($_POST as $key => $value) {
             // Alle eintragen bis auf event und send (nicht in CSV erwünscht)
@@ -119,7 +119,7 @@ if (isset($_POST["send"])) {
         while ($line = fgets($fh)) {
             // an "-" in Array spalten
             $t = explode("-", $line);
-            $linesOfCurrentEvent = getLines($linkToSub.$t[0]);
+            $linesOfCurrentEvent = getLines($linkToTab.$t[0]);
             if ($lable != "" ||$nr != "") {
                 $lable .= ",";
                 $nr .= ",";
@@ -128,7 +128,7 @@ if (isset($_POST["send"])) {
             //Verschiedene Anzeigen: normal / (x Plätze übrig!) / ausgebucht (...)
             if ($linesOfCurrentEvent < $maxZuschauer+1) {
                 $freeSeats = $maxZuschauer + 1 - $linesOfCurrentEvent;
-                if ($freeSeats<$freiePlätzeZeigenAb) {
+                if ($freeSeats<$freiePlätzeZeigenAb+1) {
                     $lable .= $t[1]."($freeSeats Plätze übrig!)";
                 } else {
                     $lable .= $t[1];
