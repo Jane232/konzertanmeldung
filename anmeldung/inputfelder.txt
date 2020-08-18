@@ -1,0 +1,34 @@
+{
+  "input": {
+    "Vorname *": {
+      "type": "text",
+      "required": "required",
+      "label": ""
+    },
+    "Name *": {
+      "type": "text",
+      "required": "required",
+      "label": ""
+    },
+    "Straße *": {
+      "type": "text",
+      "required": "required",
+      "label": ""
+    },
+    "Plz/Stadt *": {
+      "type": "text",
+      "required": "required",
+      "label": ""
+    },
+    "Telefonnummer": {
+      "type": "text",
+      "required": "",
+      "label": "Am besten erreichbar unter"
+    },
+    "E-Mail": {
+      "type": "email",
+      "required": "",
+      "label": "oder"
+    }
+  }
+}
