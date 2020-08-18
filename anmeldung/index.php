@@ -279,18 +279,19 @@ if (isset($_GET["show"])) { // Je nach Menü-Auswahl werden verschiedene Sachen 
         if (isset($_POST["setupUpdate"])) {
             $fh = fopen("setup.txt", "r");
             while ($line = fgets($fh)) {
-                $t = explode("-", $line);
+                $t = explode("--", $line);
                 $label[] = $t[0];
                 $varKind[] = $t[1];
-                $content[] = $_POST[$t[0]];
+                // Zeilenbrüche durch <br> ersetzten
+                $content[] = rtrim(preg_replace("/\r\n|\r|\n/", '<br>', $_POST[$t[0]]), "<br>");
             }
             fclose($fh);
             $contentString = "";
             for ($i=0; $i < sizeof($label); $i++) {
                 if ($i < sizeof($label)-1) {
-                    $contentString = $contentString.$label[$i]."-".$varKind[$i]."-".$content[$i]."\n";
+                    $contentString .= $label[$i]."--".$varKind[$i]."--".$content[$i]."\n";
                 } else {
-                    $contentString = $contentString.$label[$i]."-".$varKind[$i]."-".$content[$i];
+                    $contentString .= $label[$i]."--".$varKind[$i]."--".$content[$i];
                 }
             }
             $fp = fopen("setup.txt", 'w');
@@ -302,24 +303,26 @@ if (isset($_GET["show"])) { // Je nach Menü-Auswahl werden verschiedene Sachen 
             $form = '<center><form action="" method="post">';
             while ($line = fgets($fh)) {
                 $t = explode("--", $line);
+                //<br> zurück zu Zeilensprüngen
+                $t[2] = str_replace('<br>', "\n", $t[2]);
                 switch ($t[1]) {
                   case 'int':
                     $form .= "<label for=".$t[0]." style='align:center;'>".$t[0]."</label> <input type='number' name=".$t[0]." value=".$t[2].">";
                     break;
-
                   case 'text':
                     // Berechnung für die Höhe der textarea
                     //temp ist ca. die Zeilenanzahl gemessen an der Zeichenanzahl
-                    $temp = ceil(strlen($t[2])/90)."em";
+                    $temp = ceil(strlen($t[2])/70)."em";
                     // Wird dann als Style in den String geschrieben
                     $height = "height: calc($temp + 50px + 1em);";
                     $form .= "<label for=".$t[0]." style='align:center;'>$t[0]</label><div id='tArea'> <textarea class='auto-resize' style='$height'  name=$t[0]>$t[2]</textarea></div>";
                     break;
                   default:
-                    $form .= "<label for=".$t[0]." style='align:center;'>".$t[0]."</label><input type='text' name=".$t[0]." value=".$t[2].">";
+                    $form .= "<label for=".$t[0]." style='align:center;'>".$t[0]."</label><input type='text' name=".$t[0]." value='".$t[2]."'>";
                     break;
                 }
             }
+            fclose($fh);
             if (isset($height)) {
                 // JS script, welches die TAs automatisch vergrößert wenn mehr Text dazu-kommt
                 $form .= "<script>let multipleFields=document.querySelectorAll('.auto-resize');
@@ -333,7 +336,6 @@ if (isset($_GET["show"])) { // Je nach Menü-Auswahl werden verschiedene Sachen 
                         }</script>";
             }
             echo $form .= '<button type="submit" name="setupUpdate">Absenden!</button></form></center>';
-            fclose($fh);
         }
     } elseif ($_GET["show"] == "user") { // Nutzer Hinzufügen
         if (isset($_POST["add"])) {
