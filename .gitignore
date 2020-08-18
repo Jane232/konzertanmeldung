@@ -1,2 +1,3 @@
 anmeldung/.htaccess
 anmeldung/.htpasswd
+anmeldung/tabellen/*.csv
