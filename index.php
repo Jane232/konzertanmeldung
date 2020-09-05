@@ -2,15 +2,12 @@
 <?php
 //Einbinden der Funktionen
 require_once("functions.php");
-
 //VARIABLEN
-
 // Links zu Ordnern
 $subfolder = "anmeldung";
-$sep = (strpos(getcwd(), "/") === false) ? '\\' : '/' ;
+$sep = DIRECTORY_SEPARATOR;
 $linkToSub = $subfolder.$sep;
 $linkToTab = $linkToSub."tabellen".$sep;
-
 //Variablen deklarieren aus setup.txt
 $fh = fopen($linkToSub.'setup.txt', 'r');
 // korekte Initialisierung (nach Typ) der Variablen aus setup.txt
@@ -34,16 +31,39 @@ while ($line = fgets($fh)) {
 }
 fclose($fh);
 
+if (isset($_POST["send"])) {
+    // input sanitizen
+    foreach ($_POST as $name => $value) {
+        $_POST[$name] = htmlentities(str_replace(array(',','--','\\'), '', $_POST[$name]), ENT_QUOTES, 'utf-8');
+        if (strlen($_POST[$name]) > $maxInputLenght) {
+            $_POST[$name] = substr($_POST[$name], 0, $maxInputLenght);
+        }
+    }
+    // Erstellung des md5 Hashes für den Cookienamen um Doppelsendungen zu vermeiden!
+    $token = "";
+    foreach ($_POST as $value) {
+        $token .= $value;
+    }
+    $md5 = md5($token);
+} else {
+    $md5 = "";
+}
 
 //CODE
-
 // wenn Formular ausgefüllt ist, dann wird if ausgeführt
 // Eintragen des User-Inputs in CSV
 $eingetragen = "";
-if (isset($_POST["send"])) {
-    if (getLines($linkToTab.$_POST["event"]) < $maxZuschauer+1) {//Wenn Event noch nicht voll ist, dann:
+if (isset($_POST["send"]) && !isset($_COOKIE[$md5])) {
+    $token = "";
+    foreach ($_POST as $value) {
+        $token .= $value;
+    }
+    setcookie(md5($token), "CookieGegenDoppelEintraegeVon$token", time() + 7200);
+    //setcookie(md5($token), "", time() + 7200);
+
+    if (getLines($linkToTab.$_POST["event"]) < $maxZuschauer) {//Wenn Event noch nicht voll ist, dann:
         // Nummer des Users im Event an 1. Stelle
-        $content = $contentCSV = getLines($linkToTab.$_POST["event"]);
+        $contentCSV = getLines($linkToTab.$_POST["event"])+1;
         // Iterierung über alle POST-Vars
         foreach ($_POST as $key => $value) {
             // Alle eintragen bis auf event und send (nicht in CSV erwünscht)
@@ -53,24 +73,36 @@ if (isset($_POST["send"])) {
               case 'send':
                 break;
               default:
-              //$content = $content."___".$value;
               $contentCSV .= ",".$value;
                 break;
             }
         }
         //An jede Zeile einen Zeilenumbruch
-        //$content = $content."\n";
         $contentCSV= $contentCSV."\n";
-
-        //.txt
-        //$fp = fopen($linkToTab.$_POST["event"].".txt", 'a');
-        //fwrite($fp, $content);
-        //fclose($fp);
-
         //.csv -> Tabelle (.CSV schreiben) / preg_replace um ungewünschte Leerzeichen o.ä. zu filtern
-        $fp = fopen($linkToTab.preg_replace('/\s+/', '', $_POST["event"]).".csv", 'a');
+        $event = preg_replace('/\s+/', '', $_POST["event"]);
+        $fp = fopen($linkToTab.$event.".csv", 'a');
         fwrite($fp, $contentCSV);
         fclose($fp);
+
+        // Absicherung (Jeder User bekommt neue Datei)
+        if (!is_dir($linkToTab.$event)) {
+            if (mkdir($linkToTab.$event)) {
+                $dirExists = true;
+            } else {
+                $dirExists = false;
+            }
+        } else {
+            $dirExists = true;
+        }
+        //Wenn Verzeichniss vorhanden:
+        if ($dirExists == true) {
+            // Erstellt einzigartige Datei mit den CSV-Werten des Inputs
+            $fp = fopen($linkToTab.$event.$sep.uniqid(), 'w');
+            fwrite($fp, $contentCSV);
+            fclose($fp);
+        }
+
         $eingetragen = true;
     } else {
         $eingetragen = false;
@@ -84,11 +116,12 @@ if (isset($_POST["send"])) {
    <meta charset="utf-8">
    <title> <?php echo $title; ?> </title>
    <link rel="stylesheet" href="style.css">
+   <link href="/site/templates/images/favicon.ico" rel="shortcut icon">
   </head>
 
   <body>
     <?php
-    if (isset($_GET["sent"])) {
+    if (isset($_GET["sent"]) && !isset($_COOKIE[$md5])) {
         echo '<center style="margin: 20px 0 0 0;">
         <!--Logo oben-->
         <a href="http://www.musik.stadtkirche-pforzheim.de"><img src="Musik-Stempel rund.png" alt="Logo" ></a><center>';
@@ -97,8 +130,13 @@ if (isset($_POST["send"])) {
         } elseif ($eingetragen === false) {
             echo'<div style="color:black;font-size: 1.4em;margin:10% 0 0 0;">'.$textFailed.'</div>';
         }
-        echo '<br><br><a href="index.php">Hier zurück zur Anmeldung</a>
-        <p style="padding: 0 15%; position: fixed;bottom: 0; right: 0; margin: 10% auto 5% auto ;"> '.$fußzeile.'</p></center>';
+        echo '<br><br><a href="index.php">Hier zurück zur Anmeldung</a><br><br><br><p>'.$fußzeile.'</p></center>';
+    } elseif (isset($_GET["sent"]) && isset($_COOKIE[$md5])) {
+        echo '<center style="margin: 20px 0 0 0;">
+               <a href="http://www.musik.stadtkirche-pforzheim.de"><img src="Musik-Stempel rund.png" alt="Logo" ></a>
+                <br><br>Diese Person wurde schon eingetragen!<br><br>
+                <a href="index.php">Hier zurück zur Anmeldung</a><br><br><br><p>'.$fußzeile.'</p>
+              </center>';
     } else {
         echo '<center style="margin: 20px 0 0 0;">
         <!--Logo oben-->
@@ -126,10 +164,14 @@ if (isset($_POST["send"])) {
             }
             $nr .= $t[0];
             //Verschiedene Anzeigen: normal / (x Plätze übrig!) / ausgebucht (...)
-            if ($linesOfCurrentEvent < $maxZuschauer+1) {
-                $freeSeats = $maxZuschauer + 1 - $linesOfCurrentEvent;
+            if ($linesOfCurrentEvent < $maxZuschauer) {
+                $freeSeats = $maxZuschauer - $linesOfCurrentEvent;
                 if ($freeSeats<$freiePlätzeZeigenAb+1) {
-                    $lable .= $t[1]."($freeSeats Plätze übrig!)";
+                    if ($freeSeats > 1) {
+                        $lable .= $t[1]."($freeSeats Plätze übrig!)";
+                    } else {
+                        $lable .= $t[1]."($freeSeats Platz übrig!)";
+                    }
                 } else {
                     $lable .= $t[1];
                 }

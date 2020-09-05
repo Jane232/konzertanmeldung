@@ -1,21 +1,21 @@
 {
   "input": {
-    "Vorname *": {
+    "* Vorname": {
       "type": "text",
       "required": "required",
       "label": ""
     },
-    "Name *": {
+    "* Name": {
       "type": "text",
       "required": "required",
       "label": ""
     },
-    "Straße *": {
+    "* Straße": {
       "type": "text",
       "required": "required",
       "label": ""
     },
-    "Plz/Stadt *": {
+    "* Plz/Stadt": {
       "type": "text",
       "required": "required",
       "label": ""

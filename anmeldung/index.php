@@ -4,7 +4,27 @@ error_reporting(E_ALL);
 //Einbindung der Funktionen
 require_once("../functions.php");
 // Variable für HTML-Titel der Seite
-$titleOfBackend = "Backend";
+$titleOfBackend = "Backend - Übersicht";
+if (isset($_GET["show"])) {
+    switch ($_GET["show"]) {
+      case 'events':
+        $titleOfBackend = "Backend - Events bearbeiten";
+        break;
+      case 'lists':
+        $titleOfBackend = "Backend - Listen ausgeben";
+        break;
+      case 'deleteList':
+        $titleOfBackend = "Backend - Listen löschen";
+        break;
+      case 'setup':
+        $titleOfBackend = "Backend - Einstellungen";
+        break;
+      case 'user':
+        $titleOfBackend = "Backend - Nutzer hinzufügen";
+        break;
+    }
+}
+
 // Name des Sub-Ordners
 $subfolder = "tabellen";
 // korekte URL
@@ -62,6 +82,7 @@ if (isset($_GET["show"])) { // Je nach Menü-Auswahl werden verschiedene Ifs aus
    <meta charset="utf-8">
    <title> <?php echo $titleOfBackend; ?> </title>
    <link rel="stylesheet" href="../style.css">
+   <link href="/site/templates/images/favicon.ico" rel="shortcut icon">
   </head>
   <body>
     <!--Etwas CSS für das NAV-->
@@ -132,6 +153,7 @@ if (isset($_GET["show"])) { // Je nach Menü-Auswahl werden verschiedene Sachen 
          }
          </script>';
     } elseif ($_GET["show"] == "lists") { //Liste ausgeben
+        echo "<h1>Listen ausgeben</h1>";
         if (isset($_POST["send"])) {// Wenn Auswahl der Liste schon getroffen, dann:
             // Den Eventnamen aus Event.txt lesen
             $fh = fopen('events.txt', 'r');
@@ -144,15 +166,53 @@ if (isset($_GET["show"])) { // Je nach Menü-Auswahl werden verschiedene Sachen 
                 }
             }
             fclose($fh);
-            if (file_exists($linkToTab.preg_replace('/\s+/', '', $_POST["event"]).".csv")) {// Wenn Tabelle existiert, dann
+            $linkToEvent = $linkToTab.preg_replace('/\s+/', '', $_POST["event"]);
+            echo "<h1>Teilnehmerliste von $eventName</h1><center>";
+            $FeedbackOfEntries = getLines($linkToEvent);
+            echo $FeedbackOfEntries = ($FeedbackOfEntries>1) ? "(Insgesamt $FeedbackOfEntries Einträge)" : "($FeedbackOfEntries Eintrag)";
+            echo '<br><br><a href="index.php?show=lists">Zurück zur Auswahl</a></center>';
+
+            if (is_dir($linkToEvent)) {
+                $myDirectory = opendir($linkToEvent);
+                // Alle Inhalte des Dirs (/tabellen)
+                $files = [];
+                while ($entryName = readdir($myDirectory)) {
+                    // Filtern, dass nur Dateien angezeigt werden (Keine Ordner)
+                    if (is_file($linkToEvent.$sep.$entryName)) {
+                        $files[] = $entryName;
+                    }
+                }
+                closedir($myDirectory);
+                $linesOfEvent = getLines($linkToEvent);
+                $feedback = (sizeof($files) == $linesOfEvent) ? "Gleiche Zeilenanzahl" : "Andere Zahlenanzahl (".sizeof($files)." - $linesOfEvent)";
+                $csvline = "";
+
+                $fileAppend = fopen($linkToEvent."(viaSingleFileRead).csv", 'w');
+                fwrite($fileAppend, "");
+                fclose($fileAppend);
+
+                $fileAppend = fopen($linkToEvent."(viaSingleFileRead).csv", 'a');
+                foreach ($files as $file) {
+                    $fileWrite = fopen($linkToEvent.$sep.$file, "r");
+                    while ($line = fgets($fileWrite)) {
+                        fwrite($fileAppend, $line);
+                    }
+                    fclose($fileWrite);
+                }
+                fclose($fileAppend);
+            } else {
+                $feedback = "Folder not set";
+            }
+
+            if (file_exists($linkToEvent.".csv")) {// Wenn Tabelle existiert, dann
                 //Überschrift
-                echo "<h1>$eventName</h1><br>";
-                echo '<center><a href="index.php?show=lists">Zurück zur Auswahl</a></center>';
 
                 //download-Link
-                echo '<center><a href="'.$linkToTab.preg_replace('/\s+/', '', $_POST["event"]).'.csv" style="font-size: 0.8em;" download>.CSV-Datei zum download</a></center>';
+                echo '<center><a href="'.$linkToEvent.'.csv" style="font-size: 0.8em;" download>.CSV-Datei zum download</a></center>';
+                echo $temp = ($feedback != "Folder not set")?'<center><a href="'.$linkToEvent.'(viaSingleFileRead).csv" style="font-size: 0.8em;" download> BackUp-CSV-Datei zum download</a> ('.$feedback.')</center>' : "<center>$feedback</center>";
+
                 //echo '<center><a href="'.$linkToTab.$_POST["event"].'.txt" style="font-size: 0.8em;" download>.TXT-Datei zum download</a></center>';
-                if (($handle = fopen($linkToTab.preg_replace('/\s+/', '', $_POST["event"]).".csv", "r")) !== false) {
+                if (($handle = fopen($linkToEvent.".csv", "r")) !== false) {
                     // Tabelle mit alle Werten erstellen
                     echo '<table border="1" style="width: 60%; margin: 50px 20%;">';
                     while (($data = fgetcsv($handle, 1000, ",")) !== false) {
@@ -196,8 +256,10 @@ if (isset($_GET["show"])) { // Je nach Menü-Auswahl werden verschiedene Sachen 
             // Option-Tag mit Funktion erstellen
             echo xsvToOption(",", $nr, "", $lable);
             echo '</select><button type="submit" name="send" >Ausgeben</button></form>';
+            listAllFilesOf(getcwd().$sep, $linkToTab);
         }
     } elseif ($_GET["show"] == "deleteList") {// Liste Löschen
+        echo "<h1>Listen löschen</h1>";
         if (isset($_POST["delete"])) {// Wenn Auswahl schon getroffen und bestätigt:
             // $feedback wird je nach Ausgang verschieden beschrieben!
 
@@ -205,12 +267,18 @@ if (isset($_GET["show"])) { // Je nach Menü-Auswahl werden verschiedene Sachen 
             if (file_exists($linkToTab.preg_replace('/\s+/', '', $_POST["datei"]).".csv")) {//&& file_exists($linkToTab.$_POST["datei"].".txt")) {
                 // Versuch des Löschens der Datei
                 if (unlink($linkToTab.preg_replace('/\s+/', '', $_POST["datei"]).".csv")) {// && unlink($linkToTab.$_POST["datei"].".txt")) {
-                    $feedback = "Dateien erfolgreich gelöscht!";
+                    $feedback = "Datei erfolgreich gelöscht!";
                 } else {
                     $feedback =  "Fehler beim löschen!!";
                 }
             } else {
-                $feedback = "Dateien haben nicht existiert";
+                $feedback = "Datei haben nicht existiert";
+            }
+            if (is_dir($linkToTab.preg_replace('/\s+/', '', $_POST["datei"]))) {
+                deleteDir($linkToTab.preg_replace('/\s+/', '', $_POST["datei"]));
+            }
+            if (file_exists($linkToTab.preg_replace('/\s+/', '', $_POST["datei"])."(viaSingleFileRead).csv")) {
+                unlink($linkToTab.preg_replace('/\s+/', '', $_POST["datei"])."(viaSingleFileRead).csv");
             }
             // Zurück-Link
             echo "<center>".$feedback."<br><br><a href='index.php?show=deleteList'>Zurück zum Listen-löschen</a><br></center>";
@@ -253,41 +321,9 @@ if (isset($_GET["show"])) { // Je nach Menü-Auswahl werden verschiedene Sachen 
             echo xsvToOption(",", $nr, "", $lable);
             echo '</select><button type="submit" name="send" >Löschen</button></form>';
         }
-
-
-        // Anzeigen der verbliebenen Dateien
-        $myDirectory = opendir(getcwd().$sep.$linkToTab);
-        // Alle Inhalte des Dirs (/tabellen)
-        $files = [];
-        while ($entryName = readdir($myDirectory)) {
-            $dirArray[] = $entryName;
-            // Filtern, dass nur Dateien angezeigt werden (Keine Ordner)
-            if (is_file($linkToTab.$entryName)) {
-                $files[] = $entryName;
-            }
-        }
-        closedir($myDirectory);
-        // Wenn mind. eine Datei existiert, dann wird eine Liste mit den Dateien erstellt und ausgegeben.
-        if (sizeof($files)>0) {
-            echo "<h1>Folgende Dateien befinden sich im Ornder:</h1><div style='width:50%; margin: 0 25%;'><ul>";
-            foreach ($files as $doc) {
-                // Eventname des Files suchen
-                $name = rtrim($doc, ".csv");
-                $nameOfFile = "";
-                $fh = fopen("events.txt", "r");
-                // Über alle Event-Zeilen iterieren
-                while ($line = fgets($fh)) {
-                    $t = explode("-", $line);
-                    if ($t[0] == $name) {
-                        $nameOfFile .= $t[1];
-                    }
-                }
-                fclose($fh);
-                echo "<li>$doc ($nameOfFile)</li>";
-            }
-            echo '</ul> </div>';
-        }
+        listAllFilesOf(getcwd().$sep, $linkToTab);
     } elseif ($_GET["show"]=="setup") { // Einstellungen
+        echo "<h1>Einstellungen</h1><br>";
         if (isset($_POST["setupUpdate"])) {
             $fh = fopen("setup.txt", "r");
             while ($line = fgets($fh)) {
@@ -350,6 +386,7 @@ if (isset($_GET["show"])) { // Je nach Menü-Auswahl werden verschiedene Sachen 
             echo $form .= '<button type="submit" name="setupUpdate">Absenden!</button></form></center>';
         }
     } elseif ($_GET["show"] == "user") { // Nutzer Hinzufügen
+        echo "<h1>Nutzer hinzufügen</h1><br>";
         if (isset($_POST["add"])) {
             // an das existierende htpasswd den User-Input appenden
             $fh = fopen('.htpasswd', 'a');

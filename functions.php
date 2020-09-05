@@ -36,16 +36,59 @@ function xsvToOption($seperator, $xsv, $selected ="", $label="")
 // Funktion die die Zeilenanzahl des angegebenen .csv-Files zurückgibt
 function getLines($linkToFile)
 {
-    $linecount = 0;
-    $handle = @fopen(preg_replace('/\s+/', '', $linkToFile).".csv", "r");
-    if ($handle != false) {
-        while (!feof($handle)) {
-            $line = fgets($handle);
-            $linecount++;
-        }
+    if (is_file(preg_replace('/\s+/', '', $linkToFile.".csv"))) {
+        return (int) $linecount = count(file($linkToFile.".csv"));
     } else {
-        $linecount = 1;
+        return 0;
     }
-    @fclose($handle);
-    return (int)$linecount;
+}
+
+function listAllFilesOf($link, $linkToTab)
+{
+    // Anzeigen der verbliebenen Dateien
+    $myDirectory = opendir($link.$linkToTab);
+    // Alle Inhalte des Dirs (/tabellen)
+    $files = [];
+    while ($entryName = readdir($myDirectory)) {
+        $dirArray[] = $entryName;
+        // Filtern, dass nur Dateien angezeigt werden (Keine Ordner)
+        if (is_file($linkToTab.$entryName)) {
+            $files[] = $entryName;
+        }
+    }
+    closedir($myDirectory);
+    // Wenn mind. eine Datei existiert, dann wird eine Liste mit den Dateien erstellt und ausgegeben.
+    if (sizeof($files)>0) {
+        echo "<h1>Folgende Dateien befinden sich im Ornder:</h1><div style='width:50%; margin: 0 25%;'><ul>";
+        foreach ($files as $doc) {
+            // Eventname des Files suchen
+            $name = rtrim($doc, ".csv");
+            $nameOfFile = "";
+            $fh = fopen("events.txt", "r");
+            // Über alle Event-Zeilen iterieren
+            while ($line = fgets($fh)) {
+                $t = explode("-", $line);
+                if ($t[0] == $name) {
+                    $nameOfFile .= $t[1];
+                }
+            }
+            fclose($fh);
+            echo "<li>$doc ($nameOfFile)</li>";
+        }
+        echo '</ul> </div>';
+    }
+}
+
+function deleteDir($dirPath)
+{
+    $it = new RecursiveDirectoryIterator($dirPath, RecursiveDirectoryIterator::SKIP_DOTS);
+    $files = new RecursiveIteratorIterator($it, RecursiveIteratorIterator::CHILD_FIRST);
+    foreach ($files as $file) {
+        if ($file->isDir()) {
+            rmdir($file->getRealPath());
+        } else {
+            unlink($file->getRealPath());
+        }
+    }
+    rmdir($dirPath);
 }
