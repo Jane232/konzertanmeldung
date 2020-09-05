@@ -1,4 +1,3 @@
-
 <?php
 //Einbinden der Funktionen
 require_once("functions.php");
@@ -8,6 +7,8 @@ $subfolder = "anmeldung";
 $sep = DIRECTORY_SEPARATOR;
 $linkToSub = $subfolder.$sep;
 $linkToTab = $linkToSub."tabellen".$sep;
+
+$md5 = "";
 //Variablen deklarieren aus setup.txt
 $fh = fopen($linkToSub.'setup.txt', 'r');
 // korekte Initialisierung (nach Typ) der Variablen aus setup.txt
@@ -33,10 +34,42 @@ fclose($fh);
 
 if (isset($_POST["send"])) {
     // input sanitizen
+    //Funktion die überprüft ob eine Postvar vom User auch wirklich existiert bzw. ob sie vorgesehen ist
+    function checkIfPostIsInEvents($linkToSub, $post)
+    {
+        $json = json_decode(file_get_contents($linkToSub."inputfelder.txt"), true);
+
+        foreach ($json["input"] as $key => $val) {
+            //$key = preg_replace('/\s+/', '', $key);
+            //echo $key."<br>".str_replace('_', '', $post)."<br>";
+            if (preg_replace('/\s+/', '', $key) == str_replace('_', '', $post)) {
+                $return = true;
+                break;
+            }
+        }
+        return $return = (isset($return)) ? $return : false ;
+    }
+    // Über alle Post Iterieren
     foreach ($_POST as $name => $value) {
-        $_POST[$name] = htmlentities(str_replace(array(',','--','\\'), '', $_POST[$name]), ENT_QUOTES, 'utf-8');
-        if (strlen($_POST[$name]) > $maxInputLenght) {
-            $_POST[$name] = substr($_POST[$name], 0, $maxInputLenght);
+        // Die Standart Post werden gefiltert
+        switch ($name) {
+          case 'event':
+          case 'send':
+            break;
+          default:
+          // Wenn Post in Liste steht, dann:
+          if (checkIfPostIsInEvents($linkToSub, $name)) {
+              // Post sanitizen
+              $_POST[$name] = htmlentities(str_replace(array(',','\\','/','-','_','<','>'), '', $_POST[$name]), ENT_QUOTES, 'utf-8');
+              // Wenn Post länger als $maxInputLenght ist wird der Rest abgeschnitten
+              if (strlen($_POST[$name]) > $maxInputLenght) {
+                  $_POST[$name] = substr($_POST[$name], 0, $maxInputLenght);
+              }
+          } else {
+              //Falls Post nicht vorgesehen dann wird sie gelöscht
+              unset($_POST[$name]);
+          }
+            break;
         }
     }
     // Erstellung des md5 Hashes für den Cookienamen um Doppelsendungen zu vermeiden!
@@ -45,8 +78,6 @@ if (isset($_POST["send"])) {
         $token .= $value;
     }
     $md5 = md5($token);
-} else {
-    $md5 = "";
 }
 
 //CODE
