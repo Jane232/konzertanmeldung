@@ -111,11 +111,7 @@ if (isset($_GET["show"])) { // Je nach Menü-Auswahl werden verschiedene Sachen 
           // Veränderte Events in events.txt schreiben
           $fp = fopen("events.txt", 'w');
           // Alle illegalen Chars, die Probleme verursachen könnten, werden gelöscht
-<<<<<<< HEAD
           fwrite($fp, str_replace(array('\\','/',':','*','?','"','<','>','|',','), '', $content));
-=======
-          fwrite($fp, str_replace(array('\\','/',':','*','?','"','<','>','|',',','-'), '', $content));
->>>>>>> 5979f84d5ef1dba5a9ca334dde37ef0df5417c35
           fclose($fp);
           // header(); funktioniert auf dem Server nicht, header-Informationen bereits festgelegt sind und das schwerer zu umgehen ist als einfach JS zu nutzen
           //reload Page
