@@ -19,9 +19,12 @@ if (isset($_GET["show"])) {
       case 'setup':
         $titleOfBackend = "Backend - Einstellungen";
         break;
-      case 'user':
-        $titleOfBackend = "Backend - Nutzer hinzufügen";
-        break;
+        case 'user':
+          $titleOfBackend = "Backend - Nutzer hinzufügen";
+          break;
+        case 'inputconfig':
+          $titleOfBackend = "Backend - Eingabefelder bearbeiten";
+          break;
     }
 }
 
@@ -76,6 +79,7 @@ $linkToTab = $subfolder.$sep;
         <a href="index.php?show=deleteList">Liste löschen</a>
         <a href="index.php?show=setup">Einstellungen</a>
         <a href="index.php?show=user">Nutzer hinzufügen</a>
+        <a href="index.php?show=inputconfig">Eingabefelder bearbeiten</a>
       </div>
     </center>
    <div class="pageBody">
@@ -407,6 +411,103 @@ if (isset($_GET["show"])) { // Je nach Menü-Auswahl werden verschiedene Sachen 
         <form action="" method="post">
         <input type="text" name="user" placeholder="user:passwort">
         <button type="submit" name="add" >Hinzufügen</button></form>';
+      }
+  } elseif ($_GET["show"] == "inputconfig") {
+      if (isset($_POST["deleteField"])) {
+          $name = $_POST["deleteField"];
+          $nameWithUnderscore = str_replace(' ', '_', $_POST["deleteField"]);
+          if (isset($_POST[$nameWithUnderscore.":deleteVerify"])) {
+              if ($_POST[$nameWithUnderscore.":deleteVerify"] == $_POST["deleteField"]) {
+                  $json = json_decode(file_get_contents("inputfelder.txt"), true);
+                  if ($_POST[$nameWithUnderscore.":kindOfField"] == "input") {
+                      unset($json["input"][$name]);
+                      $feedback = '"'.$name.'" wurde erforgreich gelöscht';
+                  } else {
+                      // Option oder ähnliche
+                  }
+                  $fp = fopen("inputfelder.txt", 'w');
+                  fwrite($fp, json_encode($json));
+                  fclose($fp);
+              }
+          } else {
+              $feedback = 'Löschen von "'.$_POST["deleteField"].'" wurde nicht bestätigt!'; // FEEDBACK
+          }
+          echo "<h1>$feedback</h1>";
+      }
+      if (isset($_POST["send"])) {
+          //var_dump($_POST);
+          $json = array();
+          foreach ($_POST as $name => $value) {
+              if ($name != "send") {
+                  $split = explode(":", $name);
+                  $name = str_replace('_', ' ', $split[0]);
+                  if (!isset($$name)) {
+                      $$name = array();
+                      $newName = $value;
+                  } elseif ($split[1] == "kindOfField") {
+                      $json[$value][$newName] = $$name;
+                  } else {
+                      if (isset($split[1]) && $split[1] != "deleteVerify") {
+                          $$name[$split[1]] = $value;
+                      }
+                  }
+              }
+          }
+          $fp = fopen("inputfelder.txt", 'w');
+          fwrite($fp, json_encode($json));
+          fclose($fp);
+      }
+      if (isset($_POST["addInput"])) {
+          if (!empty($_POST["newInputTilte"])||!empty($_POST["newInputTilte1"])) {
+              $title = (!empty($_POST["newInputTilte"]))?$_POST["newInputTilte"]:$_POST["newInputTilte1"];
+              $json = json_decode(file_get_contents("inputfelder.txt"), true);
+              $json["input"][$title] = array('type'=>'text','required'=>'false','label'=>'');
+              $fp = fopen("inputfelder.txt", 'w');
+              fwrite($fp, json_encode($json));
+              fclose($fp);
+          }
+      }
+      if (!isset($_POST["send"])) {
+          $json = json_decode(file_get_contents("inputfelder.txt"), true);
+          //Für alle inputs
+          echo'<center><h1>Eingabefelder bearbeiten</h1><form action="" method="post"><button type="submit" name="send" >Ändern</button>';
+          echo "<div style='width: 60%; border: 3px solid var(--c-link); border-radius: 24px; margin: 2em; padding: 1em;' ><h1>Neues Feld hinzufügen</h1>";
+          echo '<input type="text" name="newInputTilte" placeholder="Name des Neuen Felds" >';
+          echo '<button type="submit" name="addInput">Neues Feld hinzufügen</button></div>';
+          foreach ($json["input"] as $key => $val) {
+              echo "<div style='width: 60%; border: 3px solid var(--c-link); border-radius: 24px; margin: 2em; padding: 1em;' ><b><u>$key</u></b> <br>";
+
+              echo '<label for="'.$key.':name">Name des Felds</label>';
+              echo '<input type="text" name="'.$key.':name" placeholder="'.$key.':name" required '.((!empty($json["input"][$key]))?'value="'.$key.'"':'').'>'; //Label
+
+              echo '<label for="'.$key.':type">Art des Felds</label>';
+              echo '<select name="'.$key.':type" required>';
+              $inputTypes = "text,tel,email,number,password,button,checkbox,color,date,file,hidden,image,month,radio,range,reset,search,submit,time,url,week";
+              $inputTypesLabels = "Text,Telefonnummer,E-Mail,Zahl,Passwort,Knopf,Checkbox,Farbe,Datum,Datei,Versteckt,Bild,Monat,Radio-Checkbox,Slider,Zurücksetzen,Suchen,Absenden,Zeit,URL,Woche";
+              echo (!empty($json["input"][$key]["type"])) ? xsvToOption(",", $inputTypes, $json["input"][$key]["type"], $inputTypesLabels): xsvToOption(",", $inputTypes, "", $inputTypesLabels);
+              echo'</select>';
+
+              echo '<label for="'.$key.':required">Feld benötigt / freiwillig</label>';
+              echo '<select name="'.$key.':required" required>';
+              echo (filter_var($json["input"][$key]["required"], FILTER_VALIDATE_BOOLEAN))? xsvToOption(",", "true,false", "true", "benötigt,freiwillig"): xsvToOption(",", "true,false", "false", "benötigt,freiwillig");
+              echo'</select>';
+
+              echo '<label for="'.$key.':label">Label</label>';
+              echo '<input type="text" name="'.$key.':label" placeholder="'.$key.':label" '.((!empty($json["input"][$key]["label"]))?'value="'.$json["input"][$key]["label"].'"':'').'>'; //Label
+
+              echo"<div style='margin: 0 10% 1em 10%; border: 3px solid rgb(156, 30, 30); border-radius: 24px;'> <u>$key löschen?</u><br>";
+              echo '<input type="checkbox" name="'.$key.':deleteVerify" value="'.$key.'"><label for="'.$key.':deleteVerify"> "'.$key.'" wirklich löschen?</label><br>';
+              echo '<input type="text" name="'.$key.':kindOfField" value="input" style="display:none;">';
+              echo '<button type="submit" name="deleteField" value="'.$key.'" style="border: 2px solid rgb(156, 30, 30);">"'.$key.'" löschen</button>';
+              echo"</div></div>";
+          }
+          echo "<div style='width: 60%; border: 3px solid var(--c-link); border-radius: 24px; margin: 2em; padding: 1em;' ><h1>Neues Feld hinzufügen</h1>";
+          echo '<input type="text" name="newInputTilte1" placeholder="Name des Neuen Felds" >';
+          echo '<button type="submit" name="addInput">Neues Feld hinzufügen</button></div>';
+
+          echo '<button type="submit" name="send" >Ändern</button></form></center>';
+      } else {
+          echo "<center>erfolgreich geändert <br> <a href='index.php?show=inputconfig'>Zurück zum Seite</a></center>";
       }
   }
 }

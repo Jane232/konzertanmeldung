@@ -222,7 +222,8 @@ if (isset($_POST["send"]) && !isset($_COOKIE[$md5])) {
             if (!empty($json["input"][$key]["label"])) {
                 echo '<label for="'.$key.'">'.$json["input"][$key]["label"].'</label>';
             }
-            echo '<input type="'.$json["input"][$key]["type"].'" name="'.$key.'" placeholder="'.$key.'" '.$json["input"][$key]["required"].'>';
+            $temp = (filter_var($json["input"][$key]["required"], FILTER_VALIDATE_BOOLEAN))?'required':' ';
+            echo '<input type="'.$json["input"][$key]["type"].'" name="'.$key.'" placeholder="'.$key.'" '.$temp.'>';
         }
         //Submit-Button
         echo'<button type="submit" name="send" >Absenden</button></form>
