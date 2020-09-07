@@ -438,18 +438,18 @@ if (isset($_GET["show"])) { // Je nach Menü-Auswahl werden verschiedene Sachen 
           //var_dump($_POST);
           $json = array();
           foreach ($_POST as $name => $value) {
-              if ($name != "send") {
-                  $split = explode(":", $name);
+              $split = explode(":", $name);
+              if (count($split)>1) {
                   $name = str_replace('_', ' ', $split[0]);
-                  if (!isset($$name)) {
-                      $$name = array();
+                  $param = $split[1];
+                  if (!isset($tempArray)) {
+                      $tempArray = array();
                       $newName = $value;
-                  } elseif ($split[1] == "kindOfField") {
-                      $json[$value][$newName] = $$name;
-                  } else {
-                      if (isset($split[1]) && $split[1] != "deleteVerify") {
-                          $$name[$split[1]] = $value;
-                      }
+                  } elseif ($param == "kindOfField") {
+                      $json[$value][$newName] = $tempArray;
+                      unset($tempArray);
+                  } elseif ($param != "deleteVerify") {
+                      $tempArray[$param] = $value;
                   }
               }
           }
