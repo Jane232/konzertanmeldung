@@ -1,3 +1,6 @@
 anmeldung/.htaccess
 anmeldung/.htpasswd
-anmeldung/tabellen/
+anmeldung/tabellen
+anmeldung/event.txt
+anmeldung/setup.txt
+anmeldung/inputfelder.txt

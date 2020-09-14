@@ -84,13 +84,13 @@ if (isset($_POST["send"])) {
 // wenn Formular ausgefüllt ist, dann wird if ausgeführt
 // Eintragen des User-Inputs in CSV
 $eingetragen = "";
-if (isset($_POST["send"]) && !isset($_COOKIE[$md5])) {
+if (isset($_POST["send"]) && !isset($_SESSION[$md5])) {
     $token = "";
     foreach ($_POST as $value) {
         $token .= $value;
     }
-    setcookie(md5($token), "CookieGegenDoppelEintraegeVon$token", time() + 7200);
-    //setcookie(md5($token), "", time() + 7200);
+    $_SESSION[md5($token)] = md5($token);
+
 
     if (getLines($linkToTab.$_POST["event"]) < $maxZuschauer) {//Wenn Event noch nicht voll ist, dann:
         // Nummer des Users im Event an 1. Stelle
