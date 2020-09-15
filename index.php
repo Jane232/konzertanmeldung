@@ -1,4 +1,5 @@
 <?php
+session_start();
 //Einbinden der Funktionen
 require_once("functions.php");
 //VARIABLEN
@@ -8,11 +9,9 @@ $sep = DIRECTORY_SEPARATOR;
 $linkToSub = $subfolder.$sep;
 $linkToTab = $linkToSub."tabellen".$sep;
 
-$md5 = "";
-//Variablen deklarieren aus setup.txt
-$fh = fopen($linkToSub.'setup.txt', 'r');
+$readSetup = fopen($linkToSub.'setup.txt', 'r');
 // korekte Initialisierung (nach Typ) der Variablen aus setup.txt
-while ($line = fgets($fh)) {
+while ($line = fgets($readSetup)) {
     $t = explode("--", $line);
     $name = $t[0];
     //Var-Name = $t[0]
@@ -30,115 +29,7 @@ while ($line = fgets($fh)) {
     break;
 }
 }
-fclose($fh);
-
-if (isset($_POST["send"])) {
-    // input sanitizen
-    //Funktion die überprüft ob eine Postvar vom User auch wirklich existiert bzw. ob sie vorgesehen ist
-    function checkIfPostIsInEvents($linkToSub, $post)
-    {
-        $json = json_decode(file_get_contents($linkToSub."inputfelder.txt"), true);
-
-        foreach ($json["input"] as $key => $val) {
-            //$key = preg_replace('/\s+/', '', $key);
-            //echo $key."<br>".str_replace('_', '', $post)."<br>";
-            if (preg_replace('/\s+/', '', $key) == str_replace('_', '', $post)) {
-                $return = true;
-                break;
-            }
-        }
-        return $return = (isset($return)) ? $return : false ;
-    }
-    // Über alle Post Iterieren
-    foreach ($_POST as $name => $value) {
-        // Die Standart Post werden gefiltert
-        switch ($name) {
-          case 'event':
-          case 'send':
-            break;
-          default:
-          // Wenn Post in Liste steht, dann:
-          if (checkIfPostIsInEvents($linkToSub, $name)) {
-              // Post sanitizen
-              $_POST[$name] = htmlentities(str_replace(array(',','\\','/','-','_','<','>'), '', $_POST[$name]), ENT_QUOTES, 'utf-8');
-              // Wenn Post länger als $maxInputLenght ist wird der Rest abgeschnitten
-              if (strlen($_POST[$name]) > $maxInputLenght) {
-                  $_POST[$name] = substr($_POST[$name], 0, $maxInputLenght);
-              }
-          } else {
-              //Falls Post nicht vorgesehen dann wird sie gelöscht
-              unset($_POST[$name]);
-          }
-            break;
-        }
-    }
-    // Erstellung des md5 Hashes für den Cookienamen um Doppelsendungen zu vermeiden!
-    $token = "";
-    foreach ($_POST as $value) {
-        $token .= $value;
-    }
-    $md5 = md5($token);
-}
-
-//CODE
-// wenn Formular ausgefüllt ist, dann wird if ausgeführt
-// Eintragen des User-Inputs in CSV
-$eingetragen = "";
-if (isset($_POST["send"]) && !isset($_SESSION[$md5])) {
-    $token = "";
-    foreach ($_POST as $value) {
-        $token .= $value;
-    }
-    $_SESSION[md5($token)] = md5($token);
-
-
-    if (getLines($linkToTab.$_POST["event"]) < $maxZuschauer) {//Wenn Event noch nicht voll ist, dann:
-        // Nummer des Users im Event an 1. Stelle
-        $contentCSV = getLines($linkToTab.$_POST["event"])+1;
-        // Iterierung über alle POST-Vars
-        foreach ($_POST as $key => $value) {
-            // Alle eintragen bis auf event und send (nicht in CSV erwünscht)
-            // Eintragen => Input des Users mit "," getrennt an den String hängen
-            switch ($key) {
-              case 'event':
-              case 'send':
-                break;
-              default:
-              $contentCSV .= ",".$value;
-                break;
-            }
-        }
-        //An jede Zeile einen Zeilenumbruch
-        $contentCSV= $contentCSV."\n";
-        //.csv -> Tabelle (.CSV schreiben) / preg_replace um ungewünschte Leerzeichen o.ä. zu filtern
-        $event = preg_replace('/\s+/', '', $_POST["event"]);
-        $fp = fopen($linkToTab.$event.".csv", 'a');
-        fwrite($fp, $contentCSV);
-        fclose($fp);
-
-        // Absicherung (Jeder User bekommt neue Datei)
-        if (!is_dir($linkToTab.$event)) {
-            if (mkdir($linkToTab.$event)) {
-                $dirExists = true;
-            } else {
-                $dirExists = false;
-            }
-        } else {
-            $dirExists = true;
-        }
-        //Wenn Verzeichniss vorhanden:
-        if ($dirExists == true) {
-            // Erstellt einzigartige Datei mit den CSV-Werten des Inputs
-            $fp = fopen($linkToTab.$event.$sep.uniqid(), 'w');
-            fwrite($fp, $contentCSV);
-            fclose($fp);
-        }
-
-        $eingetragen = true;
-    } else {
-        $eingetragen = false;
-    }
-}
+fclose($readSetup);
 ?>
 
 <!DOCTYPE html>
@@ -151,88 +42,110 @@ if (isset($_POST["send"]) && !isset($_SESSION[$md5])) {
   </head>
 
   <body>
-    <?php
-    if (isset($_GET["sent"]) && !isset($_COOKIE[$md5])) {
-        echo '<center style="margin: 20px 0 0 0;">
-        <!--Logo oben-->
-        <a href="http://www.musik.stadtkirche-pforzheim.de"><img src="Musik-Stempel rund.png" alt="Logo" ></a><center>';
-        if ($eingetragen === true) {
-            echo'<div style="color:black;font-size: 1.4em;margin:10% 0 0 0;">'.$textSuccess.'</div>';
-        } elseif ($eingetragen === false) {
-            echo'<div style="color:black;font-size: 1.4em;margin:10% 0 0 0;">'.$textFailed.'</div>';
-        }
-        echo '<br><br><a href="index.php">Hier zurück zur Anmeldung</a><br><br><br><p>'.$fußzeile.'</p></center>';
-    } elseif (isset($_GET["sent"]) && isset($_COOKIE[$md5])) {
-        echo '<center style="margin: 20px 0 0 0;">
-               <a href="http://www.musik.stadtkirche-pforzheim.de"><img src="Musik-Stempel rund.png" alt="Logo" ></a>
-                <br><br>Diese Person wurde schon eingetragen!<br><br>
-                <a href="index.php">Hier zurück zur Anmeldung</a><br><br><br><p>'.$fußzeile.'</p>
-              </center>';
-    } else {
-        echo '<center style="margin: 20px 0 0 0;">
-        <!--Logo oben-->
-        <a href="http://www.musik.stadtkirche-pforzheim.de"><img src="Musik-Stempel rund.png" alt="Logo" ></a>
-        <!--Text-Oben-->
-        <p style="width: 70%;">'.$textOben.'</p>
+    <center style="margin: 2em 10%;">
+    <a href="http://www.musik.stadtkirche-pforzheim.de"><img src="Musik-Stempel rund.png" alt="Logo" ></a>
 
-      <!--Formular-->
-    <form class="input-box" style="margin: 3em 0 0 0" action="index.php?sent=true" method="post" >
-      <h1>Anmeldung</h1>
-      <select name="event" required>
-        <option label="Konzerte:"></option>';
+    <?php if (!isset($_POST["start"])) {
+    if (isset($_POST["event"])) {
+        switch ($_POST["stimme"]) {
+        case 'Sopran':
+          $maxZuschauer = $platzSopran;
+        break;
+        case 'Alt':
+          $maxZuschauer = $platzAlt;
+        break;
+        case 'Tenor':
+          $maxZuschauer = $platzTenor;
+        break;
+        case 'Bass':
+          $maxZuschauer = $platzBass;
+          break;
+      }
+        $json = json_decode(file_get_contents($linkToTab.$_POST["event"].".json"), true);
+        $belegtePlätze = (int) count($json[$_POST["stimme"]]);
 
-        // Events aus event.txt lesen und in select bzw. option einfügen
-        $lable = $nr = "";
-        $fh = fopen($linkToSub.'events.txt', 'r');
-        //Iterieren über alle Zeilen
-        while ($line = fgets($fh)) {
-            // an "-" in Array spalten
-            $t = explode("-", $line);
-            $linesOfCurrentEvent = getLines($linkToTab.$t[0]);
-            if ($lable != "" ||$nr != "") {
-                $lable .= ",";
-                $nr .= ",";
-            }
-            $nr .= $t[0];
-            //Verschiedene Anzeigen: normal / (x Plätze übrig!) / ausgebucht (...)
-            if ($linesOfCurrentEvent < $maxZuschauer) {
-                $freeSeats = $maxZuschauer - $linesOfCurrentEvent;
-                if ($freeSeats<$freiePlätzeZeigenAb+1) {
-                    if ($freeSeats > 1) {
-                        $lable .= $t[1]."($freeSeats Plätze übrig!)";
-                    } else {
-                        $lable .= $t[1]."($freeSeats Platz übrig!)";
-                    }
-                } else {
-                    $lable .= $t[1];
-                }
-            } else {
-                $lable .= "ausgebucht (".$t[1].")";
-            }
+        if ($maxZuschauer > $belegtePlätze) {
+            $json[$_POST["stimme"]][StringLengthStrip($_POST["name"], $maxInputLenght)] = StringLengthStrip($_POST["email"], $maxInputLenght);
+            $feedback = $textSuccess;
+        } else {
+            $feedback = $textFailed;
         }
-        fclose($fh);
-        echo xsvToOption(",", $nr, "", $lable);
-        echo'</select>';
-
-        //Inputfelder aus json-Format lesen und in HTML umwandeln
-        $json = json_decode(file_get_contents($linkToSub."inputfelder.txt"), true);
-        //Für alle inputs
-        foreach ($json["input"] as $key => $val) {
-            // Wenn Label vorhanden
-            if (!empty($json["input"][$key]["label"])) {
-                echo '<label for="'.$key.'">'.$json["input"][$key]["label"].'</label>';
-            }
-            $temp = (filter_var($json["input"][$key]["required"], FILTER_VALIDATE_BOOLEAN))?'required':' ';
-            echo '<input type="'.$json["input"][$key]["type"].'" name="'.$key.'" placeholder="'.$key.'" '.$temp.'>';
-        }
-        //Submit-Button
-        echo'<button type="submit" name="send" >Absenden</button></form>
-        <!--Text-Unten-->
-        <p style="width: 70%;"> '.$fußzeile.'</p><br>
-      </center>
-      ';
+        $jsonWriteNew = fopen($linkToTab.$_POST["event"].".json", 'w');
+        fwrite($jsonWriteNew, json_encode($json));
+        fclose($jsonWriteNew);
     }
-    ?>
-
+    if (isset($_POST["event"]) && isset($feedback)) {
+        echo "<h1><u><b>$feedback</b></u></h1>";
+    }
+    echo '<p style="width: 70%;">'.$textOben.'</p><br><h1>'.$title.'</h1> <br><form class="input-box" action="" method="post">
+  <input type="text" name="name" placeholder="Name" required>
+  <input type="email" name="email" placeholder="E-Mail" required>
+  <select name="stimme" required>
+  <option label="Stimme auswählen:"></option>';
+    echo xsvToOption(",", "Sopran,Alt,Tenor,Bass");
+    echo'</select>
+  <button type="submit" name="start">Weiter</button>
+</form>';
+} elseif (isset($_POST["start"])) {
+    echo '<h1>'.$title.'</h1> <p>'.$_POST["name"].' : '.$_POST["stimme"].'</p> <br><form class="input-box" action="" method="post">
+     <input type="text" name="name" style="display:none;" value="'.$_POST["name"].'">
+     <input type="text" name="stimme" style="display:none;" value="'.$_POST["stimme"].'">
+     <input type="text" name="email" style="display:none;" value="'.$_POST["email"].'">';
+    $readEvent = fopen($linkToSub.'events.txt', 'r');
+    while ($line = fgets($readEvent)) {
+        $t = explode("-", $line);
+        $eventDocName = $t[0];
+        if (!is_file($linkToTab.$eventDocName.".json")) {
+            $jsonWriteNew = fopen($linkToTab.$eventDocName.".json", 'w');
+            $json = '{"Sopran": {},"Alt": {},"Tenor": {},"Bass": {}}';
+            fwrite($jsonWriteNew, $json);
+            fclose($jsonWriteNew);
+        }
+        $json = json_decode(file_get_contents($linkToTab.$eventDocName.".json"), true);
+        echo "<h1>$t[1]</h1>";
+        $belegtePlätze = (int) sizeof($json[$_POST["stimme"]]);
+        if ($belegtePlätze > 0) {
+            echo "<p>Bereits eingetragen:</p><ul>";
+            foreach ($json[$_POST["stimme"]] as $key =>$name) {
+                echo "<li>$key</li>";
+            }
+            echo '</ul>';
+        } else {
+            echo "<p>Noch niemand eingetragen</p>";
+        }
+        switch ($_POST["stimme"]) {
+          case 'Sopran':
+            $maxZuschauer = $platzSopran;
+          break;
+          case 'Alt':
+            $maxZuschauer = $platzAlt;
+          break;
+          case 'Tenor':
+            $maxZuschauer = $platzTenor;
+          break;
+          case 'Bass':
+            $maxZuschauer = $platzBass;
+            break;
+        }
+        if ($belegtePlätze < $maxZuschauer) {
+            if ($maxZuschauer - $belegtePlätze < $freiePlätzeZeigenAb) {
+                if ($maxZuschauer - $belegtePlätze == 1) {
+                    echo "<p>Noch ein Platz frei</p>";
+                } else {
+                    echo "<p>Noch ". ($maxZuschauer - $belegtePlätze)." Plätze frei</p>";
+                }
+            }
+            echo '<button type="submit" name="event" value ="'.$eventDocName.'">bei '.$t[1].' eintragen</button>';
+        } else {
+            echo '<p>Leider sind alle Plätze dieser Probe belegt!</p>';
+        }
+        echo "<hr/>";
+    }
+    fclose($readEvent);
+    echo '</form>';
+}
+echo '<p style="width: 70%;"> '.$fußzeile.'</p><br>';
+ ?>
+</center>
 </body>
 </html>

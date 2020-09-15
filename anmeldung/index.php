@@ -1,12 +1,20 @@
 <?php
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
-//Einbindung der Funktionen
-require_once("../functions.php");
-// Variable für HTML-Titel der Seite
-$titleOfBackend = "Backend - Übersicht";
-if (isset($_GET["show"])) {
-    switch ($_GET["show"]) {
+
+session_start();
+
+require_once("login.php");
+
+$titleOfBackend = "Backend - LogIn";
+
+if ($authed == true) {
+    //Einbindung der Funktionen
+    require_once("../functions.php");
+    // Variable für HTML-Titel der Seite
+    $titleOfBackend = "Backend - Übersicht";
+    if (isset($_GET["show"])) {
+        switch ($_GET["show"]) {
       case 'events':
         $titleOfBackend = "Backend - Events bearbeiten";
         break;
@@ -19,25 +27,29 @@ if (isset($_GET["show"])) {
       case 'setup':
         $titleOfBackend = "Backend - Einstellungen";
         break;
-        case 'user':
-          $titleOfBackend = "Backend - Nutzer hinzufügen";
+        case 'addFrontendUser':
+          $titleOfBackend = "Backend - Nutzer hinzufügen (Frontend)";
           break;
-        case 'inputconfig':
-          $titleOfBackend = "Backend - Eingabefelder bearbeiten";
+        case 'addBackendUser':
+          $titleOfBackend = "Backend - Nutzer hinzufügen (Backend)";
           break;
+        case 'deleteEntry':
+          $titleOfBackend = "Backend - Eintrag löschen";
+          break;
+
     }
+    }
+
+    // korekte URL
+    $url = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? "https://" : "http://";
+    $url .= $_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'];
+    // '/' oder '\'
+    $sep = DIRECTORY_SEPARATOR;
+    // Name des Sub-Ordners
+    $subfolder = "tabellen";
+    // Link zu Sub-Ornder
+    $linkToTab = $subfolder.$sep;
 }
-
-// korekte URL
-$url = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? "https://" : "http://";
-$url .= $_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'];
-
-// '/' oder '\'
-$sep = DIRECTORY_SEPARATOR;
-// Name des Sub-Ordners
-$subfolder = "tabellen";
-// Link zu Sub-Ornder
-$linkToTab = $subfolder.$sep;
 ?>
 
 <!DOCTYPE html>
@@ -49,45 +61,49 @@ $linkToTab = $subfolder.$sep;
    <link href="/site/templates/images/favicon.ico" rel="shortcut icon">
   </head>
   <body>
-    <!--Etwas CSS für das NAV-->
-    <style media="screen">
+    <?php
+if ($authed == true) {
+    //require_once("backendFunctions.php");
+    echo '
+    <style>.nav-div{
+      width: 80%;
+      display: grid;
+      grid-template-columns: auto auto auto auto;
+    }
+    .nav-div a{
+      margin: 1em 0;
+    }
+    @media screen and (max-width: 900px)
+    {
       .nav-div{
-        width: 80%;
-        display: grid;
-        grid-template-columns: auto auto auto auto;
+        grid-template-columns: auto auto ;
       }
       .nav-div a{
-        margin: 1em 0;
+        margin: 0.5em 0;
       }
-      @media screen and (max-width: 900px)
-      {
-        .nav-div{
-          grid-template-columns: auto auto ;
-        }
-        .nav-div a{
-          margin: 0.5em 0;
-        }
-      }
-    </style>
-    <center style="margin: 20px 0 0 0;">
-      <!--LOGO-->
-      <a href="../"><img src="../Musik-Stempel rund.png" alt="Logo" ></a>
-      <!--NAV-->
-      <div class="nav-div">
-        <a href="index.php?show=events">Events bearbeiten</a>
-        <a href="index.php?show=lists">Listen ausgeben</a>
-        <a href="index.php?show=deleteList">Liste löschen</a>
-        <a href="index.php?show=setup">Einstellungen</a>
-        <a href="index.php?show=user">Nutzer hinzufügen</a>
-        <a href="index.php?show=inputconfig">Eingabefelder bearbeiten</a>
-      </div>
-    </center>
-   <div class="pageBody">
-<?php
-if (isset($_GET["show"])) { // Je nach Menü-Auswahl werden verschiedene Sachen gezeigt
+    }</style>
+  <center style="margin: 20px 0 0 0;">
+    <!--LOGO-->
+    <a href="../"><img src="../Musik-Stempel rund.png" alt="Logo" ></a>
+    <!--NAV-->
+    <div class="nav-div">
+      <a href="index.php?show=events">Events bearbeiten</a>
+      <a href="index.php?show=lists">Listen ausgeben</a>
+      <a href="index.php?show=deleteList">Liste löschen</a>
+      <a href="index.php?show=setup">Einstellungen</a>
+      <a href="index.php?show=addFrontendUser">Nutzer hinzufügen (Frontend)</a>
+      <a href="index.php?show=addBackendUser">Nutzer hinzufügen (Backend)</a>
+      <a href="index.php?show=deleteEntry">Eintrag Löschen</a>
+      <a href="index.php?show=logOut">LogOut</a>
+    </div>
+  </center>
+ <div class="pageBody">
+';
+    if (isset($_GET["show"])) { // Je nach Menü-Auswahl werden verschiedene Sachen gezeigt
   if ($_GET["show"] == "events") { // Events bearbeiten
-    // Auslesen der aktuellen Events und Events mit <br> trennen um jeweils eine neue Zeile zu haben
-    $fh = fopen('events.txt', 'r');
+    events($_POST);
+      // Auslesen der aktuellen Events und Events mit <br> trennen um jeweils eine neue Zeile zu haben
+      $fh = fopen('events.txt', 'r');
       $events ="";
       while ($line = fgets($fh)) {
           $t = explode("-", $line);
@@ -170,68 +186,38 @@ if (isset($_GET["show"])) { // Je nach Menü-Auswahl werden verschiedene Sachen 
 
           //Überschrift
           echo "<h1>Teilnehmerliste von $eventName</h1><center>";
-          $FeedbackOfEntries = getLines($linkToEvent);
-          echo $res = ($FeedbackOfEntries>1) ? "(Insgesamt $FeedbackOfEntries Einträge)" : (($FeedbackOfEntries == 1)?"($FeedbackOfEntries Eintrag)":"");
           echo '<br><br><a href="index.php?show=lists">Zurück zur Auswahl</a></center>';
 
-          // Wenn ein Dir zu dem Event extistiert
-          if (is_dir($linkToEvent)) {
-              $myDirectory = opendir($linkToEvent);
-              // Alle Inhalte des Dirs (/tabellen)
-              $files = [];
-              while ($entryName = readdir($myDirectory)) {
-                  // Filtern, dass nur Dateien angezeigt werden (Keine Ordner)
-                  if (is_file($linkToEvent.$sep.$entryName)) {
-                      $files[] = $entryName;
+
+          if (file_exists($linkToEvent.".json")) {// Wenn Tabelle existiert, dann
+              //download-Link
+              $json = json_decode(file_get_contents($linkToEvent.".json"), true);
+              $stimmen = array("Sopran","Alt","Tenor","Bass");
+              $csv = "";
+              foreach ($stimmen as $stimme) {
+                  $csv .= $stimme."\n";
+                  foreach ($json[$stimme] as $key =>$name) {
+                      $csv .= ",".$key.",".$name."\n";
                   }
               }
-              closedir($myDirectory);
-              // Zeilen des Normalen .csv docs zum Vergleich
-              $linesOfEvent = getLines($linkToEvent);
-              // Feedback zum Ausgeben
-              $feedback = (sizeof($files) == $linesOfEvent) ? "Gleiche Zeilenanzahl" : "Andere Zahlenanzahl (".sizeof($files)." - $linesOfEvent)";
+              $csvNew = fopen($linkToEvent.".csv", 'w');
+              fwrite($csvNew, $csv);
+              fclose($csvNew);
 
-              //mögliches löschen einer alten Version des (viaSingleFileRead).csv
-              $fileDelete = fopen($linkToEvent."(viaSingleFileRead).csv", 'w');
-              fwrite($fileDelete, "");
-              fclose($fileDelete);
-
-              //Erneutes öffnen des (viaSingleFileRead).csv
-              $fileAppend = fopen($linkToEvent."(viaSingleFileRead).csv", 'a');
-              // Über alle Dateien iterieren und alle Zeilen (sollten nur eine sein) in (viaSingleFileRead).csv eintragen
-              foreach ($files as $file) {
-                  fwrite($fileAppend, file_get_contents($linkToEvent.$sep.$file));
-              }
-              fclose($fileAppend);
-          } else {
-              $feedback = "Ordner existiert noch nicht!";
-          }
-
-          if (file_exists($linkToEvent.".csv")) {// Wenn Tabelle existiert, dann
-              //download-Link
               echo '<center><a href="'.$linkToEvent.'.csv" style="font-size: 0.8em;" download>.CSV-Datei zum download</a></center>';
-              echo ($feedback != "Ordner existiert noch nicht!")?'<center><a href="'.$linkToEvent.'(viaSingleFileRead).csv" style="font-size: 0.8em;" download> BackUp-CSV-Datei zum download</a> ('.$feedback.')</center>' : "<center>$feedback</center>";
 
               // öffnet die .CSV
-              if (($handle = fopen($linkToEvent.".csv", "r")) !== false) {
-                  // Tabelle mit alle Werten erstellen
-                  echo '<table border="1" style="width: 60%; margin: 50px 20%;">';
-                  while (($data = fgetcsv($handle, 1000, ",")) !== false) {
-                      $num = count($data);
-                      echo '<tr>';
-                      for ($c=0; $c < $num; $c++) {
-                          if (empty($data[$c])) {
-                              $value = "&nbsp;";
-                          } else {
-                              $value = $data[$c];
-                          }
-                          echo '<td style="text-align:center">'.$value.'</td>';
-                      }
-                      echo '</tr>';
+              $json = json_decode(file_get_contents($linkToEvent.".json"), true);
+              // Tabelle mit alle Werten erstellen
+              echo '<table border="1" style="width: 60%; margin: 50px 20%;">';
+              $stimmen = array("Sopran","Alt","Tenor","Bass");
+              foreach ($stimmen as $stimme) {
+                  echo"<tr><td style='text-align:center'>$stimme:</td></tr>";
+                  foreach ($json[$stimme] as $key =>$name) {
+                      echo"<tr><td></td><td style='text-align:center'>$key</td><td style='text-align:center'>$name</td></tr>";
                   }
-                  echo '</table>';
-                  fclose($handle);
               }
+              echo '</table>';
           } else { // Falls Tabelle nicht existiert:
               echo "<center>Diese Tabelle ($eventName) existiert noch nicht <br>keine Einträge im Ordner $eventName<br><br> <a href='index.php?show=lists'>Zurück zur Listenübersicht</a></center>";
           }
@@ -265,9 +251,9 @@ if (isset($_GET["show"])) { // Je nach Menü-Auswahl werden verschiedene Sachen 
           // $feedback wird je nach Ausgang verschieden beschrieben!
 
           // Check ob Datei(en) überhaupt existieren
-          if (file_exists($linkToTab.preg_replace('/\s+/', '', $_POST["datei"]).".csv")) {//&& file_exists($linkToTab.$_POST["datei"].".txt")) {
+          if (file_exists($linkToTab.preg_replace('/\s+/', '', $_POST["datei"]))) {//&& file_exists($linkToTab.$_POST["datei"].".txt")) {
               // Versuch des Löschens der Datei
-              if (unlink($linkToTab.preg_replace('/\s+/', '', $_POST["datei"]).".csv")) {// && unlink($linkToTab.$_POST["datei"].".txt")) {
+              if (unlink($linkToTab.preg_replace('/\s+/', '', $_POST["datei"]))) {// && unlink($linkToTab.$_POST["datei"].".txt")) {
                   $feedback = "Datei erfolgreich gelöscht!";
               } else {
                   $feedback =  "Fehler beim löschen!!";
@@ -275,34 +261,17 @@ if (isset($_GET["show"])) { // Je nach Menü-Auswahl werden verschiedene Sachen 
           } else {
               $feedback = "Dateien haben nicht existiert";
           }
-          if (is_dir($linkToTab.preg_replace('/\s+/', '', $_POST["datei"]))) {
-              deleteDir($linkToTab.preg_replace('/\s+/', '', $_POST["datei"]));
-          }
-          if (file_exists($linkToTab.preg_replace('/\s+/', '', $_POST["datei"])."(viaSingleFileRead).csv")) {
-              unlink($linkToTab.preg_replace('/\s+/', '', $_POST["datei"])."(viaSingleFileRead).csv");
-          }
           // Zurück-Link
           echo "<center>".$feedback."<br><br><a href='index.php?show=deleteList'>Zurück zum Listen-löschen</a><br></center>";
       } elseif (isset($_POST["send"])) { // Wenn Auswahl schon getroffen und noch nicht bestätigt:
-          // Dateinamen aus events.txt lesen
-          $fh = fopen('events.txt', 'r');
-          $events ="";
-          while ($line = fgets($fh)) {
-              $t = explode("-", $line);
-              if ($t[0] == $_POST["event"]) {
-                  $eventName = $t[1];
-              }
-          }
-          fclose($fh);
           // Form mit Bestätigung ob Datei wirklich gelöscht werden so
-          echo '<center>Willst du '.$eventName.' wirklich löschen?
+          echo '<center>Willst du '.$_POST["event"].' wirklich löschen?
                 <form action="" class="contentForm" method="post">
                  <input type="text" name="datei" value="'.$_POST["event"].'" style="display:none;">
                  <button type="submit" name="delete">Löschen bestätigen!</button>
                </form></center>';
       } elseif (isset($files)) {
       } else {
-          echo '<form action="" method="post"><select name="event" required><option label="Konzerte:"></option>';
           // Events aus event.txt lesen!
           $lable = $nr = "";
           $fh = fopen("events.txt", "r");
@@ -319,8 +288,26 @@ if (isset($_GET["show"])) { // Je nach Menü-Auswahl werden verschiedene Sachen 
               $lable .= $t[1];
           }
           fclose($fh);
-          echo xsvToOption(",", $nr, "", $lable);
-          echo '</select><button type="submit" name="send" >Löschen</button></form>';
+          // Anzeigen der verbliebenen Dateien
+          $myDirectory = opendir($linkToTab);
+          // Alle Inhalte des Dirs (/tabellen)
+          $files = "";
+          while ($entryName = readdir($myDirectory)) {
+              if (is_file($linkToTab.$entryName)) {
+                  if (!empty($files)) {
+                      $files .= ",".$entryName;
+                  } else {
+                      $files = $entryName;
+                  }
+              }
+          }
+          if (!empty($files)) {
+              echo '<form action="" method="post"><select name="event" required><option label="Konzerte:"></option>';
+              echo xsvToOption(",", $files);
+              echo '</select><button type="submit" name="send" >Löschen</button></form>';
+          } else {
+              echo "<center>Keine Dateien mehr verfügbar!</center>";
+          }
       }
       listAllFilesOf(getcwd().$sep, $linkToTab);
   } elseif ($_GET["show"]=="setup") { // Einstellungen
@@ -386,17 +373,17 @@ if (isset($_GET["show"])) { // Je nach Menü-Auswahl werden verschiedene Sachen 
           }
           echo $form .= '<button type="submit" name="setupUpdate">Absenden!</button></form></center>';
       }
-  } elseif ($_GET["show"] == "user") { // Nutzer Hinzufügen
-      echo "<h1>Nutzer hinzufügen</h1><br>";
+  } elseif ($_GET["show"] == "addFrontendUser") { // Nutzer Hinzufügen
+      echo "<h1>Nutzer hinzufügen (Frontend)</h1><br>";
       if (isset($_POST["add"])) {
           // an das existierende htpasswd den User-Input appenden
-          $fh = fopen('.htpasswd', 'a');
+          $fh = fopen("..".$sep.'.htpasswd', 'a');
           fwrite($fh, $_POST["user"]);
           fclose($fh);
           echo '<center>User erfolgreich hinzugefügt!</center><div style="margin: 3em 20%;"> Folgende Nutzer sind registriert:<ul style="margin: 0.8em 1em;">';
           // Alle existierenden User Ausgeben
           // aus Htpasswd lesen
-          $fh = fopen(".htpasswd", "r");
+          $fh = fopen("..".$sep.".htpasswd", "r");
           while ($line = fgets($fh)) {
               // An ":" spalten und nur namen ausgeben
               $t = explode(":", $line);
@@ -410,113 +397,119 @@ if (isset($_GET["show"])) { // Je nach Menü-Auswahl werden verschiedene Sachen 
         Paar kopieren in untenliegendes Feld eintragen und absenden.</center>
         <form action="" method="post">
         <input type="text" name="user" placeholder="user:passwort">
-        <button type="submit" name="add" >Hinzufügen</button></form>';
+        <button type="submit" name="add">Hinzufügen</button></form>';
       }
-  } elseif ($_GET["show"] == "inputconfig") {
-      if (isset($_POST["deleteField"])) {
-          $name = $_POST["deleteField"];
-          $nameWithUnderscore = str_replace(' ', '_', $_POST["deleteField"]);
-          if (isset($_POST[$nameWithUnderscore.":deleteVerify"])) {
-              if ($_POST[$nameWithUnderscore.":deleteVerify"] == $_POST["deleteField"]) {
-                  $json = json_decode(file_get_contents("inputfelder.txt"), true);
-                  if ($_POST[$nameWithUnderscore.":kindOfField"] == "input") {
-                      unset($json["input"][$name]);
-                      $feedback = '"'.$name.'" wurde erforgreich gelöscht';
-                  } else {
-                      // Option oder ähnliche
-                  }
-                  $fp = fopen("inputfelder.txt", 'w');
-                  fwrite($fp, json_encode($json));
-                  fclose($fp);
-              }
-          } else {
-              $feedback = 'Löschen von "'.$_POST["deleteField"].'" wurde nicht bestätigt!'; // FEEDBACK
+  } elseif ($_GET["show"] == "addBackendUser") { // Nutzer Hinzufügen
+      echo "<h1>Nutzer hinzufügen (Backend)</h1><br>";
+      if (isset($_POST["add"])) {
+          // an das existierende htpasswd den User-Input appenden
+          $writeString = $_POST["user"]."::".$_POST["password"];
+          $fh = fopen('backendAccounts', 'a');
+          fwrite($fh, $writeString);
+          fclose($fh);
+          echo '<center>User erfolgreich hinzugefügt!</center><div style="margin: 3em 20%;"> Folgende Nutzer sind registriert:<ul style="margin: 0.8em 1em;">';
+          // Alle existierenden User Ausgeben
+          // aus Htpasswd lesen
+          $fh = fopen("backendAccounts", "r");
+          while ($line = fgets($fh)) {
+              // An ":" spalten und nur namen ausgeben
+              $t = explode("::", $line);
+              echo "<li>".$t[0]."</li>";
           }
-          echo "<h1>$feedback</h1>";
-      }
-      if (isset($_POST["send"])) {
-          //var_dump($_POST);
-          $json = array();
-          foreach ($_POST as $name => $value) {
-              $split = explode(":", $name);
-              if (count($split)>1) {
-                  $name = str_replace('_', ' ', $split[0]);
-                  $param = $split[1];
-                  if (!isset($tempArray)) {
-                      $tempArray = array();
-                      $newName = $value;
-                  } elseif ($param == "kindOfField") {
-                      $json[$value][$newName] = $tempArray;
-                      unset($tempArray);
-                  } elseif ($param != "deleteVerify") {
-                      $tempArray[$param] = $value;
-                  }
-              }
-          }
-          $fp = fopen("inputfelder.txt", 'w');
-          fwrite($fp, json_encode($json));
-          fclose($fp);
-      }
-      if (isset($_POST["addInput"])) {
-          if (!empty($_POST["newInputTilte"])||!empty($_POST["newInputTilte1"])) {
-              $title = (!empty($_POST["newInputTilte"]))?$_POST["newInputTilte"]:$_POST["newInputTilte1"];
-              $json = json_decode(file_get_contents("inputfelder.txt"), true);
-              $json["input"][$title] = array('type'=>'text','required'=>'false','label'=>'');
-              $fp = fopen("inputfelder.txt", 'w');
-              fwrite($fp, json_encode($json));
-              fclose($fp);
-          }
-      }
-      if (!isset($_POST["send"])) {
-          $json = json_decode(file_get_contents("inputfelder.txt"), true);
-          //Für alle inputs
-          echo'<center><h1>Eingabefelder bearbeiten</h1><form action="" method="post"><button type="submit" name="send" >Ändern</button>';
-          echo "<div style='width: 60%; border: 3px solid var(--c-link); border-radius: 24px; margin: 2em; padding: 1em;' ><h1>Neues Feld hinzufügen</h1>";
-          echo '<input type="text" name="newInputTilte" placeholder="Name des Neuen Felds" >';
-          echo '<button type="submit" name="addInput">Neues Feld hinzufügen</button></div>';
-          foreach ($json["input"] as $key => $val) {
-              echo "<div style='width: 60%; border: 3px solid var(--c-link); border-radius: 24px; margin: 2em; padding: 1em;' ><b><u>$key</u></b> <br>";
-
-              echo '<label for="'.$key.':name">Name des Felds</label>';
-              echo '<input type="text" name="'.$key.':name" placeholder="'.$key.':name" required '.((!empty($json["input"][$key]))?'value="'.$key.'"':'').'>'; //Label
-
-              echo '<label for="'.$key.':type">Art des Felds</label>';
-              echo '<select name="'.$key.':type" required>';
-              $inputTypes = "text,tel,email,number,password,button,checkbox,color,date,file,hidden,image,month,radio,range,reset,search,submit,time,url,week";
-              $inputTypesLabels = "Text,Telefonnummer,E-Mail,Zahl,Passwort,Knopf,Checkbox,Farbe,Datum,Datei,Versteckt,Bild,Monat,Radio-Checkbox,Slider,Zurücksetzen,Suchen,Absenden,Zeit,URL,Woche";
-              echo (!empty($json["input"][$key]["type"])) ? xsvToOption(",", $inputTypes, $json["input"][$key]["type"], $inputTypesLabels): xsvToOption(",", $inputTypes, "", $inputTypesLabels);
-              echo'</select>';
-
-              echo '<label for="'.$key.':required">Feld benötigt / freiwillig</label>';
-              echo '<select name="'.$key.':required" required>';
-              echo (filter_var($json["input"][$key]["required"], FILTER_VALIDATE_BOOLEAN))? xsvToOption(",", "true,false", "true", "benötigt,freiwillig"): xsvToOption(",", "true,false", "false", "benötigt,freiwillig");
-              echo'</select>';
-
-              echo '<label for="'.$key.':label">Label</label>';
-              echo '<input type="text" name="'.$key.':label" placeholder="'.$key.':label" '.((!empty($json["input"][$key]["label"]))?'value="'.$json["input"][$key]["label"].'"':'').'>'; //Label
-
-              echo"<div style='margin: 0 10% 1em 10%; border: 3px solid rgb(156, 30, 30); border-radius: 24px;'> <u>$key löschen?</u><br>";
-              echo '<input type="checkbox" name="'.$key.':deleteVerify" value="'.$key.'"><label for="'.$key.':deleteVerify"> "'.$key.'" wirklich löschen?</label><br>';
-              echo '<input type="text" name="'.$key.':kindOfField" value="input" style="display:none;">';
-              echo '<button type="submit" name="deleteField" value="'.$key.'" style="border: 2px solid rgb(156, 30, 30);">"'.$key.'" löschen</button>';
-              echo"</div></div>";
-          }
-          echo "<div style='width: 60%; border: 3px solid var(--c-link); border-radius: 24px; margin: 2em; padding: 1em;' ><h1>Neues Feld hinzufügen</h1>";
-          echo '<input type="text" name="newInputTilte1" placeholder="Name des Neuen Felds" >';
-          echo '<button type="submit" name="addInput">Neues Feld hinzufügen</button></div>';
-
-          echo '<button type="submit" name="send" >Ändern</button></form></center>';
+          echo"</ul></div>";
+          fclose($fh);
       } else {
-          echo "<center>erfolgreich geändert <br> <a href='index.php?show=inputconfig'>Zurück zum Seite</a></center>";
+          // Form mit einem input
+          echo '<center><form action="" class="input-box" method="post">
+        <input type="text" name="user" placeholder="Username" required>
+        <input type="password" name="password" placeholder="Passwort" required>
+        <button type="submit" name="add" >Hinzufügen</button></form></center>';
+      }
+  } elseif ($_GET["show"]=="deleteEntry") {
+      echo "<h1><u>$titleOfBackend</u></h1>";
+      if (isset($_POST["stimme"])) {
+          $json = json_decode(file_get_contents($_POST["event"].".json"), true);
+          if (isset($json[$_POST["stimme"]][$_POST["Name"]])) {
+              unset($json[$_POST["stimme"]][$_POST["Name"]]);
+              $feedback = $_POST['Name']." (".$_POST['stimme'].") aus ".$_POST['event'].".json  erfolgreich gelöscht";
+          } else {
+              $feedback = "Beim löschen von ".$_POST['Name']." (".$_POST['stimme'].") aus ".$_POST['event'].".json gab es einen Fehler!";
+          }
+          $csvNew = fopen($_POST["event"].".json", 'w');
+          fwrite($csvNew, json_encode($json));
+          fclose($csvNew);
+      }
+      if (isset($_POST["send"])) {// Wenn Auswahl der Liste schon getroffen, dann:
+
+          // Den Eventnamen aus Event.txt lesen
+          $fh = fopen('events.txt', 'r');
+          $events ="";
+          // Über alle Zeilen iterieren
+          while ($line = fgets($fh)) {
+              $t = explode("-", $line);// An "-" Spalten
+            if ($t[0] == $_POST["event"]) { //Nur den ausgewählten Namen speichern
+                $eventName = $t[1];
+            }
+          }
+          fclose($fh);
+          $linkToEvent = $linkToTab.preg_replace('/\s+/', '', $_POST["event"]);
+
+          //Überschrift
+          echo "<h1>Teilnehmerliste von $eventName</h1><center>";
+          echo '<br><br><a href="index.php?show=deleteEntry">Zurück zur Auswahl</a><br><br></center>';
+          if (file_exists($linkToEvent.".json")) {// Wenn Tabelle existiert, dann
+              $json = json_decode(file_get_contents($linkToEvent.".json"), true);
+              // Tabelle mit alle Werten erstellen
+              echo '<center>';
+              $stimmen = array("Sopran","Alt","Tenor","Bass");
+              foreach ($stimmen as $stimme) {
+                  echo '<form action="" method="post"><table style="width:60%;">
+                  <input type="text" name="event" style="display:none;" value="'.$linkToEvent.'">
+                  <input type="text" name="stimme" style="display:none;" value="'.$stimme.'">';
+                  echo"<tr><td style='text-align:center'>$stimme:</td></tr>";
+                  foreach ($json[$stimme] as $key =>$name) {
+                      echo"<tr><td></td><td style='text-align:center'>$key</td><td style='text-align:center'>$name</td><td style='text-align:center'><button type='submit' name='Name' value='$key'>$key löschen</button></td></tr>";
+                  }
+                  echo "</table></form>";
+              }
+              echo '</center>';
+          } else { // Falls Tabelle nicht existiert:
+              echo "<center>Diese Tabelle ($eventName) existiert noch nicht <br>keine Einträge im Ordner $eventName<br><br> <a href='index.php?show=lists'>Zurück zur Listenübersicht</a></center>";
+          }
+      } else { // Wenn noch keine Auswahl für die anzuzeigende Tabelle gesendet wurde:
+          // Form mit select und allen Events aus event.txt
+          echo (isset($feedback))?"<br><h1>".$feedback."</h1><br>":"";
+          echo '<form action="" method="post"><select name="event" required><option label="Konzerte:"></option>';
+          // Events aus event.txt lesen!
+          $lable = $nr = "";
+          $fh = fopen("events.txt", "r");
+          // Über alle Event-Zeilen iterieren
+          while ($line = fgets($fh)) {
+              // für richtige Komma-Setzung
+              if ($lable != "" ||$nr != "") {
+                  $lable .= ",";
+                  $nr .= ",";
+              }
+              // Lable und Name spliten und in verschiedene Variablen
+              $t = explode("-", $line);
+              $nr .= $t[0];
+              $lable .= $t[1];
+          }
+          fclose($fh);
+          // Option-Tag mit Funktion erstellen
+          echo xsvToOption(",", $nr, "", $lable);
+          echo '</select><button type="submit" name="send" >Ausgeben</button></form>';
       }
   }
+    }
+} else {
+    showLogin(isset($_GET["show"]));
 }
-
 ?>
 <!--Fixer Zurückknopf-->
 <span style="position: fixed; bottom: 0px; margin-bottom: 0px; float:right; margin:0 10% 5vh 75%;"><a href="index.php">Zurück zur Übersicht</a></span>
-
 <br><br>
-  </div>
+
+</div>
 </body>
 </html>

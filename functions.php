@@ -62,7 +62,7 @@ function listAllFilesOf($link, $linkToTab)
         echo "<h1>Folgende Dateien befinden sich im Ornder:</h1><div style='width:50%; margin: 0 25%;'><ul>";
         foreach ($files as $doc) {
             // Eventname des Files suchen
-            $name = rtrim($doc, ".csv");
+            $name = str_replace(array(".json",".csv"), "", $doc);
             $nameOfFile = "";
             $fh = fopen("events.txt", "r");
             // Über alle Event-Zeilen iterieren
@@ -91,4 +91,12 @@ function deleteDir($dirPath)
         }
     }
     rmdir($dirPath);
+}
+function StringLengthStrip($string, $maxInputLenght)
+{
+    if (strlen($string) > $maxInputLenght) {
+        return substr($string, 0, $maxInputLenght);
+    } else {
+        return $string;
+    }
 }
