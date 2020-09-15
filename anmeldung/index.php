@@ -101,7 +101,11 @@ if ($authed == true) {
 ';
     if (isset($_GET["show"])) { // Je nach Menü-Auswahl werden verschiedene Sachen gezeigt
   if ($_GET["show"] == "events") { // Events bearbeiten
+<<<<<<< HEAD
     //events($_POST);
+=======
+    events($_POST);
+>>>>>>> 6c95afbc97eeb11a6ee44503397a711dcbbf2262
       // Auslesen der aktuellen Events und Events mit <br> trennen um jeweils eine neue Zeile zu haben
       $fh = fopen('events.txt', 'r');
       $events ="";
