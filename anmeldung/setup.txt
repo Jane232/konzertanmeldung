@@ -1,8 +1,12 @@
-title--string--Konzertanmeldung
-maxZuschauer--int--100
+title--string--Chorprobenanmeldung
+maxZuschauer--int--5
+platzSopran--int--5
+platzAlt--int--5
+platzTenor--int--5
+platzBass--int--6
 freiePlätzeZeigenAb--int--10
-textOben--text--Liebe Besucher der Stadtkirche Pforzheim, <br>aufgrund der derzeitigen Pandemie-Verordnungen, sind wir und Sie verpflichtet, in jeder Veranstaltung die Ihre Anwesenheit zu dokumentieren.<br>In der Verordnung des Landes Baden-Württemberg heißt es dazu:<br>„Teilnehmer dürfen die Veranstaltung nur besuchen, wenn sie die Daten dem Veranstalter vollständig und zutreffend zur Verfügung stellen. Diese Daten sind vom Veranstalter vier Wochen nach Erhebung zu löschen. Die allgemeinen Bestimmungen über die Verarbeitung personenbezogener Daten bleiben unberührt.“<br>Selbstverständlich halten wir uns an diese Vorgaben und hoffen, dass wir durch die Dokumentation der Anwesenheit zur Eindämmung der Pandemie beitragen und bald wieder Normalität eintreten kann.
-fußzeile--text-- Stadt- und Bezirkskantorat Pforzheim | Rennfeldstraße 5 75173 Pforzheim <br>Tel: 07231 280 11 35 | <a href="mailto:info@musik.stadtkirche-pforzheim.de">info@musik.stadtkirche-pforzheim.de</a>
+textOben--text--Zum Anmelden bitte die untenliegenden Felder ausfüllen und anschließend die gewünschte Chorprobe wählen
+fußzeile--text-- Stadt- und Bezirkskantorat Pforzheim | Rennfeldstraße 5 75173 Pforzheim <br>Tel: 07231 280 11 35 | <a href="mailto:info@musik.stadtkirche-pforzheim.de">info@musik.stadtkirche-pforzheim.de</a
 textSuccess--string--Erfolgreich eingetragen!
-textFailed--string--Leider ist das gewünschte Konzert schon ausgebucht.
+textFailed--string--Leider ist die gewünschte Probe schon ausgebucht.
 maxInputLenght--int--512
