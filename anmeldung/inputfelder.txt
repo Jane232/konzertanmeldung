@@ -1,0 +1,1 @@
+{"input":{"Vorname":{"type":"text","required":"true","label":""},"Name":{"type":"text","required":"true","label":""},"E-Mail":{"type":"email","required":"true","label":""}}}

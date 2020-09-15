@@ -100,3 +100,18 @@ function StringLengthStrip($string, $maxInputLenght)
         return $string;
     }
 }
+function fileToArray($link)
+{
+    $fh = fopen($link, 'r');
+    while ($line = fgets($fh)) {
+        $array[] = $line;
+    }
+    fclose($fh);
+    return $array;
+}
+function files($link, $string, $mode)
+{
+    $file = fopen($link, $mode);
+    fwrite($file, $string);
+    fclose($file);
+}

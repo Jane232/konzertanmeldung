@@ -1,5 +1,5 @@
 title--string--Chorprobenanmeldung
-maxZuschauer--int--4
+maxZuschauer--int--5
 platzSopran--int--5
 platzAlt--int--5
 platzTenor--int--5

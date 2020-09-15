@@ -12,34 +12,43 @@ if ($authed == true) {
     //Einbindung der Funktionen
     require_once("../functions.php");
     // Variable für HTML-Titel der Seite
-    $titleOfBackend = "Backend - Übersicht";
-    if (isset($_GET["show"])) {
-        switch ($_GET["show"]) {
-      case 'events':
-        $titleOfBackend = "Backend - Events bearbeiten";
-        break;
-      case 'lists':
-        $titleOfBackend = "Backend - Listen ausgeben";
-        break;
-      case 'deleteList':
-        $titleOfBackend = "Backend - Listen löschen";
-        break;
-      case 'setup':
-        $titleOfBackend = "Backend - Einstellungen";
-        break;
-        case 'addFrontendUser':
-          $titleOfBackend = "Backend - Nutzer hinzufügen (Frontend)";
-          break;
-        case 'addBackendUser':
-          $titleOfBackend = "Backend - Nutzer hinzufügen (Backend)";
-          break;
-        case 'deleteEntry':
-          $titleOfBackend = "Backend - Eintrag löschen";
-          break;
-
-    }
-    }
     require_once("staticVars.php");
+
+    function namesOfSites($show)
+    {
+        switch ($show) {
+    case 'events':
+      $titleOfBackend = "Backend - Events bearbeiten";
+      break;
+    case 'lists':
+      $titleOfBackend = "Backend - Listen ausgeben";
+      break;
+    case 'deleteList':
+      $titleOfBackend = "Backend - Listen löschen";
+      break;
+    case 'setup':
+      $titleOfBackend = "Backend - Einstellungen";
+      break;
+    case 'addFrontendUser':
+      $titleOfBackend = "Backend - Nutzer hinzufügen (Frontend)";
+      break;
+    case 'addBackendUser':
+      $titleOfBackend = "Backend - Nutzer hinzufügen (Backend)";
+      break;
+    case 'inputconfig':
+      $titleOfBackend = "Backend - Eingabefelder bearbeiten";
+      break;
+    case 'deleteEntry':
+      $titleOfBackend = "Backend - Eintrag löschen";
+      break;
+    default:
+      $titleOfBackend = "Backend - Übersicht";
+      break;
+    }
+        return $titleOfBackend;
+    }
+
+    $titleOfBackend = (isset($_GET["show"])) ? namesOfSites($_GET["show"]) : "Backend - Übersicht";
 }
 ?>
 
@@ -59,15 +68,15 @@ if ($authed == true) {
     <style>.nav-div{
       width: 80%;
       display: grid;
-      grid-template-columns: auto auto auto auto;
+      grid-template-columns: auto auto auto auto auto;
     }
     .nav-div a{
-      margin: 1em 0;
+      margin: 0.6em 1em;
     }
     @media screen and (max-width: 900px)
     {
       .nav-div{
-        grid-template-columns: auto auto ;
+        grid-template-columns: auto auto auto;
       }
       .nav-div a{
         margin: 0.5em 0;
@@ -85,6 +94,7 @@ if ($authed == true) {
       <a href="index.php?show=addFrontendUser">Nutzer hinzufügen (Frontend)</a>
       <a href="index.php?show=addBackendUser">Nutzer hinzufügen (Backend)</a>
       <a href="index.php?show=deleteEntry">Eintrag Löschen</a>
+      <a href="index.php?show=inputconfig">Eingabefelder bearbeiten</a>
       <a href="index.php?show=logOut">LogOut</a>
     </div>
   </center>
