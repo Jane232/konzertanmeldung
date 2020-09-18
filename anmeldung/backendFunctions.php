@@ -48,7 +48,7 @@ function events($titleOfBackend)
         // Über Array iterieren
         for ($i=0; $i < sizeof($lines)-1; $i++) {
             // An "-" Spalten
-            $name = explode('-', $lines[$i]);
+            $name = explode('-', $lines[$i], 2);
             // Alle whitespace-Chars entfernen die im Namen sind
             $lineStriped = str_replace(' ', '', preg_replace('/\s+/', '', $name[0]))."-".$name[1];
             //Zusammenfügen mit oder ohne Zeilensprung
@@ -101,7 +101,7 @@ function lists($titleOfBackend)
     if (isset($_POST["send"])) {// Wenn Auswahl der Liste schon getroffen, dann:
         // Den Eventnamen aus Event.txt lesen
         foreach (fileToArray('events.txt') as $key) {
-            $t = explode("-", $key);// An "-" Spalten
+            $t = explode("-", $key, 2);// An "-" Spalten
           if ($t[0] == $_POST["event"]) { //Nur den ausgewählten Namen speichern
               $eventName = $t[1];
           }
@@ -156,7 +156,7 @@ function lists($titleOfBackend)
             $lable .= ($lable != "") ? "," : "";
             $nr .= ($nr != "") ? "," : "";
             // Lable und Name spliten und in verschiedene Variablen
-            $t = explode("-", $line);
+            $t = explode("-", $line, 2);
             $nr .= $t[0];
             $lable .= $t[1];
         }
@@ -203,7 +203,7 @@ function deleteList($titleOfBackend)
             $lable .= ($lable != "") ? "," : "";
             $nr .= ($nr != "") ? "," : "";
             // Lable und Name spliten und in verschiedene Variablen
-            $t = explode("-", $line);
+            $t = explode("-", $line, 2);
             $nr .= $t[0];
             $lable .= $t[1];
         }
@@ -292,15 +292,7 @@ function addFrontendUser($titleOfBackend)
     if (isset($_POST["add"])) {
         // an das existierende htpasswd den User-Input appenden
         files("..".$sep.'.htpasswd', $_POST["user"], 'a');
-        echo '<center>User erfolgreich hinzugefügt!</center><div style="margin: 3em 20%;"> Folgende Nutzer sind registriert:<ul style="margin: 0.8em 1em;">';
-        // Alle existierenden User Ausgeben
-        // aus Htpasswd lesen
-        foreach (fileToArray("..".$sep.".htpasswd") as $line) {
-            // An ":" spalten und nur namen ausgeben
-            $t = explode(":", $line);
-            echo "<li>".$t[0]."</li>";
-        }
-        echo"</ul></div>";
+        echo '<center>User erfolgreich hinzugefügt!</center>';
     } else {
         // Form mit einem input
         echo '<center>User-Passwort-Paar mit <a href="https://htpasswdgenerator.de/" target=_blank>htpasswdgenerator.de</a> erstellen. <br>
@@ -309,6 +301,14 @@ function addFrontendUser($titleOfBackend)
     <input type="text" name="user" placeholder="user:passwort"required>
     <button type="submit" name="add">Hinzufügen</button></form>';
     }
+    echo'<div style="margin: 3em 20%;"> Folgende Nutzer sind registriert:<ul style="margin: 0.8em 1em;">';
+    // Alle existierenden User Ausgeben (aus Htpasswd lesen)
+    foreach (fileToArray("..".$sep.".htpasswd") as $line) {
+        // An ":" spalten und nur namen ausgeben
+        $t = explode(":", $line);
+        echo "<li>".$t[0]."</li>";
+    }
+    echo"</ul></div>";
 }
 function addBackendUser($titleOfBackend)
 {
@@ -316,18 +316,9 @@ function addBackendUser($titleOfBackend)
     echo "<h1>$titleOfBackend</h1><br>";
     if (isset($_POST["add"])) {
         // an das existierende htpasswd den User-Input appenden
-        $writeString = $_POST["user"]."::".$_POST["password"];
+        $writeString = StringLengthStrip($_POST["user"], 512)."::".password_hash(StringLengthStrip($_POST["password"], 512), PASSWORD_DEFAULT)."\n";
         files('backendAccounts', $writeString, 'a');
-        echo '<center>User erfolgreich hinzugefügt!</center><div style="margin: 3em 20%;"> Folgende Nutzer sind registriert:<ul style="margin: 0.8em 1em;">';
-        // Alle existierenden User Ausgeben
-        // aus Htpasswd lesen
-
-        foreach (fileToArray("backendAccounts") as $line) {
-            // An ":" spalten und nur namen ausgeben
-            $t = explode("::", $line);
-            echo "<li>".$t[0]."</li>";
-        }
-        echo"</ul></div>";
+        echo '<center>User erfolgreich hinzugefügt!</center>';
     } else {
         // Form mit einem input
         echo '<center><form action="" class="input-box" method="post">
@@ -335,6 +326,14 @@ function addBackendUser($titleOfBackend)
     <input type="password" name="password" placeholder="Passwort" required>
     <button type="submit" name="add" >Hinzufügen</button></form></center>';
     }
+    echo'<div style="margin: 3em 20%;"> Folgende Nutzer sind registriert:<ul style="margin: 0.8em 1em;">';
+    // Alle existierenden User Ausgeben (aus Htpasswd lesen)
+    foreach (fileToArray("backendAccounts") as $line) {
+        // An ":" spalten und nur namen ausgeben
+        $t = explode("::", $line);
+        echo "<li>".$t[0]."</li>";
+    }
+    echo"</ul></div>";
 }
 
 function deleteEntry($titleOfBackend)
@@ -355,7 +354,7 @@ function deleteEntry($titleOfBackend)
 
         // Den Eventnamen aus Event.txt lesen
         foreach (fileToArray('events.txt') as $line) {
-            $t = explode("-", $line);// An "-" Spalten
+            $t = explode("-", $line, 2);// An "-" Spalten
             if ($t[0] == $_POST["event"]) { //Nur den ausgewählten Namen speichern
                 $eventName = $t[1];
             }
@@ -399,7 +398,7 @@ function deleteEntry($titleOfBackend)
             $lable .= ($lable != "") ? "," : "";
             $nr .= ($nr != "") ? "," : "";
             // Lable und Name spliten und in verschiedene Variablen
-            $t = explode("-", $line);
+            $t = explode("-", $line, 2);
             $nr .= $t[0];
             $lable .= $t[1];
         }

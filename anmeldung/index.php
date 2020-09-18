@@ -1,8 +1,7 @@
 <?php
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
-
-session_start();
+@session_start();
 
 require_once("login.php");
 
@@ -104,6 +103,7 @@ if ($authed == true) {
         show($_GET["show"]);
     }
 } else {
+    echo '<center style="margin: 20px 0 0 0;"><a href="../"><img src="../Musik-Stempel rund.png" alt="Logo" ></a></center>';
     showLogin(isset($_GET["show"]));
 }
 ?>
