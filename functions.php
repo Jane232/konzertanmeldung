@@ -1,4 +1,3 @@
-
 <?php
 //returns a html option tag
 function option($value, $label, $selected)
@@ -67,7 +66,7 @@ function listAllFilesOf($link, $linkToTab)
             $fh = fopen("events.txt", "r");
             // Über alle Event-Zeilen iterieren
             while ($line = fgets($fh)) {
-                $t = explode("-", $line);
+                $t = explode("-", $line, 2);
                 if ($t[0] == $name) {
                     $nameOfFile .= $t[1];
                 }
@@ -77,41 +76,4 @@ function listAllFilesOf($link, $linkToTab)
         }
         echo '</ul> </div>';
     }
-}
-
-function deleteDir($dirPath)
-{
-    $it = new RecursiveDirectoryIterator($dirPath, RecursiveDirectoryIterator::SKIP_DOTS);
-    $files = new RecursiveIteratorIterator($it, RecursiveIteratorIterator::CHILD_FIRST);
-    foreach ($files as $file) {
-        if ($file->isDir()) {
-            rmdir($file->getRealPath());
-        } else {
-            unlink($file->getRealPath());
-        }
-    }
-    rmdir($dirPath);
-}
-function StringLengthStrip($string, $maxInputLenght)
-{
-    if (strlen($string) > $maxInputLenght) {
-        return substr($string, 0, $maxInputLenght);
-    } else {
-        return $string;
-    }
-}
-function fileToArray($link)
-{
-    $fh = fopen($link, 'r');
-    while ($line = fgets($fh)) {
-        $array[] = $line;
-    }
-    fclose($fh);
-    return $array;
-}
-function files($link, $string, $mode)
-{
-    $file = fopen($link, $mode);
-    fwrite($file, $string);
-    fclose($file);
 }

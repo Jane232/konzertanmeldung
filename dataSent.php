@@ -47,23 +47,20 @@ fclose($readSetup);
   </head>
 
   <body>
-
     <center style="margin: 2em 10%;">
     <a href="http://www.musik.stadtkirche-pforzheim.de"><img src="Musik-Stempel rund.png" alt="Logo" ></a>
     <?php
         if (isset($_POST["stimme"])) {
             define_voice($_POST["stimme"]);
         }
-        if (!isset($_POST["chooseEvent"])) {
-            echo '<p style="width: 70%;">'.DEF_TEXT_OBEN.'</p><br><h1>'.$title.'</h1> <br>';
-            echo construct_Input_Form_register();
-        } elseif (isset($_POST["chooseEvent"])) {
-            echo '<h1>'.$title.'</h1> <h1>'.$_POST["stimme"].':</h1> <br><div style="color:white;">';
-            echo construct_Input_Form_chooseEvent();
-            echo'</div>';
+        if (isset($_POST["event"])) {
+            $feedback = setValueToJSON($_POST["event"]);
+            echo "<div style='margin-top:3em;'><h1><u><b>$feedback</b></u></h1></div>";
         }
-        echo '<p style="width: 70%;"> '.DEF_FUßZEILE.'</p><br>';
+        echo '<br><br><a href="index.php"> Hier zurück zur Anmeldung</a>';
+        echo '<p style="width: 70%; margin-top:3em;"> '.DEF_FUßZEILE.'</p><br>';
      ?>
 </center>
+
 </body>
 </html>

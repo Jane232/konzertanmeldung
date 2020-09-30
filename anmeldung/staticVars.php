@@ -1,9 +1,22 @@
-<?php     // korekte URL
+<?php
+    declare(strict_types = 1);
+
     $url = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? "https://" : "http://";
     $url .= $_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'];
-    // '/' oder '\'
+    define("URL", $url);
+
     $sep = DIRECTORY_SEPARATOR;
-    // Name des Sub-Ordners
+    //define("SEP", DIRECTORY_SEPARATOR);
+    define("SEP", "/");
+
+    $docRoot = $_SERVER["DOCUMENT_ROOT"];
+    $project = "dashboard".SEP."choranmeldung";
+    $backend = "anmeldung";
     $subfolder = "tabellen";
-    // Link zu Sub-Ornder
-    $linkToTab = $subfolder.$sep;
+
+    $linkToRoot = $docRoot.SEP.$project.SEP;
+    $linkToBE = $docRoot.SEP.$project.SEP.$backend.SEP;
+    $linkToTab = $docRoot.SEP.$project.SEP.$backend.SEP.$subfolder.SEP;
+    define("ROOT", $linkToRoot);
+    define("BE", $linkToBE);
+    define("TAB", $linkToTab);

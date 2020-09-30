@@ -316,7 +316,7 @@ function addBackendUser($titleOfBackend)
     echo "<h1>$titleOfBackend</h1><br>";
     if (isset($_POST["add"])) {
         // an das existierende htpasswd den User-Input appenden
-        $writeString = StringLengthStrip($_POST["user"], 512)."::".password_hash(StringLengthStrip($_POST["password"], 512), PASSWORD_DEFAULT)."\n";
+        $writeString = str_stripLenght($_POST["user"])."::".password_hash(str_stripLenght($_POST["password"]), PASSWORD_DEFAULT)."\n";
         files('backendAccounts', $writeString, 'a');
         echo '<center>User erfolgreich hinzugefügt!</center>';
     } else {
