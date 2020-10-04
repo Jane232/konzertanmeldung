@@ -9,7 +9,6 @@ $titleOfBackend = "Backend - LogIn";
 
 if ($authed == true) {
     //Einbindung der Funktionen
-    require_once("../functions.php");
     // Variable für HTML-Titel der Seite
     require_once("staticVars.php");
 

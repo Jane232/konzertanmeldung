@@ -6,3 +6,6 @@ anmeldung/tabellen
 anmeldung/events.txt
 anmeldung/setup.txt
 anmeldung/backendAccounts
+anmeldung/frontendAccounts
+events
+users/*

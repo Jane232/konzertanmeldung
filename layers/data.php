@@ -1,8 +1,7 @@
 <?php
-require_once 'anmeldung'.DIRECTORY_SEPARATOR.'staticVars.php';
-
 function dir_delete(string $dirPath)
 {
+    //return bool
     if (!(dir_check($dirPath))) {
         throw new \Exception("Dir not existing!", 1);
         return false;
@@ -25,37 +24,43 @@ function dir_delete(string $dirPath)
         }
     } else {
         throw new Exception("Dir was not existing!");
+        return false;
     }
     return true;
 }
 
 function dir_create(string $dirPath)
 {
+    //return bool
     if (!dir_check($dirPath)) {
         if (!mkdir($dirPath, 0777, true)) {
             throw new Exception('Ordner konnte nicht erstellt werden!');
+            return false;
         }
     } else {
         throw new Exception("Folder was allready existing");
+        return false;
     }
     return true;
 }
 
 function dir_check(string $dirPath)
 {
+    //return bool;
     return is_dir($dirPath);
 }
 
 function dir_listFiles(string $dirPath)
 {
+    //return array/false;
     if (!(dir_check($dirPath))) {
-        throw new \Exception("Dir not existing!", 1);
+        throw new \Exception("Dir not existing! (".$dirPath.")", 1);
         return false;
     }
     $dirHandle = opendir($dirPath);
     $files = [];
     while ($objektName = readdir($dirHandle)) {
-        if (is_file($dirPath) && $objektName !== "." && $objektName !== "..") {
+        if (file_check($dirPath.SEP.$objektName) && $objektName !== "." && $objektName !== "..") {
             $files[] = $objektName;
         }
     }
@@ -64,6 +69,7 @@ function dir_listFiles(string $dirPath)
 }
 function dir_listAll(string $dirPath)
 {
+    //return array/false;
     if (!(dir_check($dirPath))) {
         throw new \Exception("Dir not existing!", 1);
         return false;
@@ -81,6 +87,7 @@ function dir_listAll(string $dirPath)
 
 function file_create(string $link)
 {
+    //return bool
     if ((file_check($link))) {
         throw new \Exception("File is allready existing!", 1);
         return false;
@@ -95,14 +102,21 @@ function file_create(string $link)
 }
 function file_check(string $link)
 {
-    return is_file($link);
+    //return bool
+    if (!file_exists($link)) {
+        return false;
+    }
+    if (is_file($link)) {
+        return true;
+    }
+    if (is_dir($link)) {
+        return false;
+    }
+    return true;
 }
 function file_handle(string $link, string $string, string $mode = "w")
 {
-    if (!file_check($link)) {
-        throw new \Exception("File not existing!", 1);
-        return false;
-    }
+    //return bool
     if (!is_string($string)) {
         throw new \Exception("String not properly formated or existing!", 1);
         return false;
@@ -131,9 +145,10 @@ function file_read(string $link)
 }
 function file_lines(string $link)
 {
+    $array = array();
     if (!file_check($link)) {
         //throw new \Exception("File not existing!", 1);
-        return $array = array();
+        return $array;
     }
     $fh = fopen($link, 'r');
     while ($line = fgets($fh)) {
@@ -152,13 +167,13 @@ function str_check(string $string)
 {
     return is_string($string);
 }
-function str_expl(string $string, string $exploder, int $limit = -1)
+function str_expl(string $string, string $exploder, $limit = false)
 {
     if (!str_check($string) && !str_check($exploder)) {
         throw new \Exception("String not formated properly!", 1);
         return false;
     }
-    if ($limit > 0) {
+    if ($limit === false) {
         return explode($string, $exploder);
     } else {
         return explode($string, $exploder, $limit);
@@ -193,15 +208,42 @@ function str_json_enc(array $jsonArray)
 {
     return json_encode($jsonArray, true);
 }
-function int_count($int)
+function file_csv_array($linkToCsV)
+{
+    $csvDataArray = file_lines($linkToCsV);
+    $array = array();
+    foreach ($csvDataArray as $line) {
+        $array[] = str_getcsv($line);
+    }
+    return $array;
+}
+function str_count(string $str)
 {
     try {
-        return count((int) $int);
+        return strlen($str);
     } catch (\Exception $e) {
-        echo"Int not formated propery";
+        echo"String not formated propery";
         return false;
     }
 }
+function arr_count(array $arr)
+{
+    try {
+        return count($arr);
+    } catch (\Exception $e) {
+        echo"Countable not formated propery";
+        return false;
+    }
+}
+function arr_to_csv_line(array $array)
+{
+    $csv = "";
+    foreach ($array as $value) {
+        $csv .= $value.",";
+    }
+    return rtrim($csv, ",");
+}
+
 function dump($val)
 {
     var_dump($val);
