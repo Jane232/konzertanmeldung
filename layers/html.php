@@ -1,16 +1,31 @@
 <?php
 require_once 'process.php';
-// TODO html_mail_text()
-// TODO html_mail_interface()
-function list_all_constants()
+function html_list_all_constants()
 {
     foreach (get_defined_constants() as $key => $v) {
         echo $key."-".$v."<br>";
     }
 }
-function display_div_none(string $string)
+function html_initialize_setup_var()
 {
-    return '<div style="display:none;">'.$string.'</div>';
+    foreach (process_read_setup() as $line) {
+        $name = $line[0];
+        //Var-Name = $line[0]
+        //Switch über 2. Arrayeintrag (Var-Type)
+        //Var-Wert = $line[2]
+        switch ($line[1]) {
+          case 'int':
+            $$name = (int) preg_replace('/\s+/', '', $line[2]);
+            break;
+          case 'bool':
+            $$name = filter_var($t[2], FILTER_VALIDATE_BOOLEAN);
+            break;
+          default:
+            $$name = str_replace("\n", "<br>", $line[2]);
+            break;
+        }
+        define("DEF_".strtoupper($name), $$name);
+    }
 }
 function html_define_group()
 {
@@ -42,20 +57,20 @@ function html_define_event_art()
 function construct_Input_Form_Json_Input()
 {
     $ret = "";
-    $jsonInputfelder = file_json_dec(UBE."inputfelder.txt");
+    $jsonInputfelder = file_json_dec(UBE."inputfelder.json");
     foreach ($jsonInputfelder["input"] as $key => $val) {
         // Wenn Label vorhanden
         if (!empty($jsonInputfelder["input"][$key]["label"])) {
             $ret .= '<label for="'.$key.'">'.$jsonInputfelder["input"][$key]["label"].'</label>';
         }
-        $temp = (filter_var($jsonInputfelder["input"][$key]["required"], FILTER_VALIDATE_BOOLEAN))?' ':' ';
+        $temp = (filter_var($jsonInputfelder["input"][$key]["required"], FILTER_VALIDATE_BOOLEAN))?'required':' ';
         $ret .= '<input type="'.$jsonInputfelder["input"][$key]["type"].'" name="'.$key.'" placeholder="'.$key.'" '.$temp.'>';
     }
     return $ret;
 }
 function html_form_input_hidden_with_values()
 {
-    $jsonInputfelder = file_json_dec(UBE."inputfelder.txt");
+    $jsonInputfelder = file_json_dec(UBE."inputfelder.json");
     $ret = "";
     foreach ($jsonInputfelder["input"] as $key => $val) {
         $value = (isset($_POST[$key]))?'value="'.$_POST[$key].'"':" ";
@@ -133,7 +148,7 @@ function xsvToOption($seperator, $xsv, $selected ="", $label="")
 
 function html_construct_Input_Form_register()
 {
-    $jsonInputfelder = file_json_dec(UBE."inputfelder.txt");
+    $jsonInputfelder = file_json_dec(UBE."inputfelder.json");
     $ret ='<form class="input-box" action="" method="post">';
     //Für alle inputs
     $ret .= construct_Input_Form_Json_Input();
@@ -152,28 +167,43 @@ function html_construct_Input_Form_register()
             </form>';
     return $ret;
 }
-function construct_Input_Form_chooseEvent()
+function html_event_form_list()
 {
-    $jsonInputfelder = file_json_dec(UBE."inputfelder.txt");
+    $jsonInputfelder = file_json_dec(UBE."inputfelder.json");
 
     $ret ='<form class="input-box" action="dataSent.php" method="post">';
     $ret .=(defined("GROUP")) ?'<input type="text" name="stimme" style="display:none;" value="'.GROUP.'">':'';
     $ret .= html_form_input_hidden_with_values();
-    // TODO:
     $json = process_event_get();
     $filteredJSON= process_event_filter($json, "art", $_SESSION["EVENT_ART"]);
-    //dump($filteredJSON);
+    if (isset($_POST["date_von"])&& !empty($_POST["date_von"])) {
+        if (!isset($_POST["date_bis"]) || empty($_POST["date_bis"])) {
+            $tempDate=date_create($_POST["date_von"]);
+            date_add($tempDate, date_interval_create_from_date_string("1 day"));
+            $date_bis = date_format($tempDate, "Y-m-d");
+        } else {
+            $date_bis = $_POST["date_bis"];
+        }
+        $filteredJSON = process_event_filter_date($filteredJSON, $_POST["date_von"], $date_bis);
+    }
+    $zähler = 0;
+    if (arr_count($filteredJSON) == 0) {
+        $ret .= "Mit diesem Filter-Einstellung sind keine Ereignisse verfügbar";
+        return $ret .= "</form>\n";
+    }
     foreach ($filteredJSON as $key) {
-        //dump($key);
-        $ret .= html_event_list_given($key);
+        $zebra = html_event_list_given($key);
+        if (!empty($zebra)) {
+            $ret .= ($zähler % 2 == 0) ? "<div class='zebraLight'>" : "<div class='zebraDark'>" ;
+            $ret .= $zebra;
+            $ret .= "</div>";
+            $zähler += 1;
+        }
     }
     return $ret .= "</form>\n";
 }
 function setValueToJSON($event)
 {
-    if (check_entry_existing()) {
-        return DEF_TEXT_ENTRYEXISTED;
-    }
     $LTE_JSON = UBE.SUBFOLDER.$event.".json";
 
     if (!check_Event_available($LTE_JSON, $event)) {
@@ -209,7 +239,7 @@ function check_user_login()
 }
 function user_html_logout()
 {
-    return user_logout()?"Erfolgreich ausgeloggt":"Fehler beim Ausloggen!";
+    return user_logout()?"<br><br>Erfolgreich ausgeloggt":"<br><br>Fehler beim Ausloggen!";
 }
 function html_user_authentication()
 {
@@ -249,9 +279,11 @@ function html_show_site()
     if (isset($_POST["chooseEvent"])) {
         // EVENTS
         echo '<h1>'.DEF_TITLE.'</h1>';
+        echo '<h1>'.get_user().'</h1>';
         echo (isset($_POST["stimme"]))?'<h1>'.$_POST["stimme"].':</h1>':'';
-        echo' <br><div style="color:white;">';
-        echo construct_Input_Form_chooseEvent();
+        echo '<br><div style="color:white;">';
+        echo html_list_event_date_selector();
+        echo html_event_form_list();
         echo'</div>';
     } else {
         // ANMELDUNG
@@ -265,7 +297,13 @@ function html_show_site()
 function html_select_option()
 {
     $groupsAvailableForUser = process_event_get_availabble_eventart_for_user();
+    if ($groupsAvailableForUser === false) {
+        echo "<br><br><br><br>Für diesen Account sind noch keine Aktivitäten freigeschalten.<br><br>
+              <a href='index.php?show=logOut'> < LogOut > </a>";
+        return;
+    }
     $csv = arr_to_csv_line($groupsAvailableForUser);
+    echo '<br><br><br><h1>Eingeloggt mit '.get_user().'</h1>';
     echo '<form action="" method="post">';
     echo '<select name="auswahl_art_event" required>';
     echo '<option label="Auswahl"></option>';
@@ -273,42 +311,96 @@ function html_select_option()
     echo '</select>';
     echo '<button type="submit" name="submit">anzeigen</button>';
     echo '</form>';
+    echo "<br><br><a href='index.php?show=logOut'> < LogOut > </a>";
 }
-function html_initialize_setup_var()
+
+function html_list_event_date_selector()
 {
-    foreach (process_read_setup() as $line) {
-        $name = $line[0];
-        //Var-Name = $line[0]
-        //Switch über 2. Arrayeintrag (Var-Type)
-        //Var-Wert = $line[2]
-        switch ($line[1]) {
-          case 'int':
-            $$name = (int) preg_replace('/\s+/', '', $line[2]);
-            break;
-          case 'bool':
-            $$name = filter_var($t[2], FILTER_VALIDATE_BOOLEAN);
-            break;
-          default:
-            $$name = $line[2];
-            break;
-        }
-        define("DEF_".strtoupper($name), $$name);
-    }
+    $von = (isset($_POST["date_von"]))?'value="'.$_POST["date_von"].'"':"";
+    $bis = (isset($_POST["date_bis"]))?'value="'.$_POST["date_bis"].'"':"";
+    $ret = '<form action="" method="post" style="width: 50%;">';
+    $ret .= html_form_input_hidden_with_values();
+    $ret .= '<label for="date_von">Event im Zeitraum von:</label>
+            <input type="date" name="date_von" '.$von.'>
+
+            <label for="date_bis">bis:</label>
+            <input type="date" name="date_bis" '.$bis.'>
+
+            <label for="chooseEvent">anzeigen</label>
+            <button type="submit" name="chooseEvent">Anzeigen</button>
+            </form>';
+    return $ret;
 }
-// TODO:
 function html_event_list_given(array $json)
 {
+    if (!process_event_check_if_open($json)) {
+        return ;
+    }
     global $LTE_JSON;
     $eventKey = process_event_get_param($json, "dateiname");
-
     $LTE_JSON = UBE.SUBFOLDER.$eventKey.".json";
     check_write_new_Event($LTE_JSON, $eventKey);
     $jsonEvents = process_event_get();
     $jsonEvent = $jsonEvents[$eventKey];
     $ret = "";
     $ret .= "<h2 style='font-weight: bold;'>".process_event_get_param($jsonEvent, "titel")."</h2>";
+    if (!empty(process_event_get_param($jsonEvent, "beginn"))) {
+        $time = process_event_get_param($jsonEvent, "beginn");
+        $timestamp = process_calc_timestamp($time);
+        $ret .= html_parse_timestamp($timestamp)."<br>";
+    }
+    if (!empty(process_event_get_param($jsonEvent, "ort"))) {
+        $ret .= "Ort: ".process_event_get_param($jsonEvent, "ort")."<br>";
+    }
     $ret .= html_bereits_eingetragen($LTE_JSON);
     $ret .= html_Plätze_übrig($LTE_JSON, $jsonEvent);
-    $ret .= "<hr/>";
     return $ret;
+}
+function html_parse_timestamp($timestamp)
+{
+    return date("d.m.Y", $timestamp)." um ".date("H:i", $timestamp)." Uhr";
+}
+function html_mail_init_event_reminder($email, $event, $start, $where, $name = "", $firstname = "")
+{
+    $vorlage_event = "_EVENT_";
+    $vorlage_wann ="_WANN_";
+    $vorlage_wo = "_WO_";
+    $vorlage_vorname = "_VORNAME_";
+    $vorlage_name = "_NAME_";
+
+    $event = " ".$event." ";
+    $start = " ".$start." ";
+    $where = " ".$where." ";
+    $firstname = " ".$firstname." ";
+    $name = " ".$name." ";
+
+    $text = str_replace($vorlage_event, $event, $text);
+    $text = str_replace($vorlage_wann, $start, $text);
+    $text = str_replace($vorlage_wo, $where, $text);
+    $text = str_replace($vorlage_vorname, $firstname, $text);
+
+    $betreff = DEF_EMAIL_REMINDER_BETREFF;
+    $betreff = str_replace($vorlage_event, $event, $betreff);
+    $betreff = str_replace($vorlage_wann, $start, $betreff);
+    $betreff = str_replace($vorlage_wo, $where, $betreff);
+    $betreff = str_replace($vorlage_vorname, $firstname, $betreff);
+    $betreff = str_replace($vorlage_name, $name, $betreff);
+
+    return process_mail_send($email, $betreff, $text);
+}
+function html_mail_send_event_reminder()
+{
+    $uI = process_sanatized_inputs();
+    $eventJSON = process_event_get();
+    $dateiname = (isset($_POST["event"])) ? $_POST["event"] : "";
+    $jsonEvent = process_event_get_by_key($eventJSON, $dateiname);
+    $email = (isset($uI["E-Mail"])) ? $uI["E-Mail"] : "fsj@musik.stadtkirche-pforzheim.de";
+    $event = process_event_get_param($jsonEvent, "titel");
+    $start = process_event_get_param($jsonEvent, "beginn");
+    $ort = process_event_get_param($jsonEvent, "ort");
+
+    $name = (isset($uI["Name"])) ? $uI["Name"] : "";
+    $vorname = (isset($uI["Vorname"])) ? $uI["Vorname"] : "";
+
+    return html_mail_init_event_reminder($email, $event, $start, $ort, $name, $vorname);
 }

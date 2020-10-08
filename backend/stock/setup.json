@@ -1,0 +1,19 @@
+[
+  {"name":"title","type":"string","value":"Anmeldung","lable":"Titel der Seite"},
+  {"name":"maxZuschauer","type":"int","value":"5","lable":"Maximale Anzahl der Zuschauer"},
+  {"name":"platzSopran","type":"int","value":"5","lable":"Maximale Anzahl der Sopr\u00e4ne"},
+  {"name":"platzAlt","type":"int","value":"5","lable":"Maximale Anzahl der Alti"},
+  {"name":"platzTenor","type":"int","value":"5","lable":"Maximale Anzahl der Ten\u00f6re"},
+  {"name":"platzBass","type":"int","value":"6","lable":"Maximale Anzahl der B\u00e4sse"},
+  {"name":"freiePlaetzeZeigenAb","type":"int","value":"10","lable":"Zahl ab der angezeigt wird, dass noch X Pl\u00e4tze frei sind"},
+  {"name":"text_Oben","type":"text","value":"Zum Anmelden bitte die untenliegenden Felder ausf\u00fcllen und anschlie\u00dfend die gew\u00fcnschte Chorprobe w\u00e4hlen","lable":"Text \u00fcber der Anmeldung"},
+  {"name":"fu\u00dfzeile","type":"text","value":" Stadt- und Bezirkskantorat Pforzheim | Rennfeldstra\u00dfe 5 75173 Pforzheim \r\n\u003Ca href=\"mailto:info@musik.stadtkirche-pforzheim.de\"\u003Einfo@musik.stadtkirche-pforzheim.de\u003C\/a\u003E | Tel: 07231 280 11 35","lable":"Text unter der Anmeldung"},
+  {"name":"text_Success","type":"string","value":"Erfolgreich eingetragen!","lable":"Text bei erfolgreichem Registrieren"},
+  {"name":"text_Fail","type":"string","value":"Leider ist die gew\u00fcnschte Probe schon ausgebucht.","lable":"Text bei fehlgeschlagenen Registrieren"},
+  {"name":"text_entryexisted","type":"string","value":"Sie wurden bei diesem Event bereits eingetragen. Klicken sie unten um wieder zur Startseite zu gelangen.","lable":"Text bei versuchter Doppelanmeldung"},
+  {"name":"maxInputLenght","type":"int","value":"512","lable":"Nutzereingaben nach X Zeichen abscheiden (Sicherheit)"},
+  {"name":"freischalten_ab","type":"string","value":"7 days 18 hours","lable":"Events standartm\u00e4\u00dfig X vorher \u00f6ffentlich machen"},
+  {"name":"freischalten_bis","type":"string","value":"3 hours","lable":"Events standartm\u00e4\u00dfig X vor dem Beginn aus der \u00d6ffentlichkeit nehmen"},
+  {"name":"EMAIL_REMINDER_BETREFF","type":"string","value":"Best\u00e4tigungsmail f\u00fcr _EVENT_","lable":"EMAIL: Betreff (_EVENT_, _WANN_, _WO_, _NAME_, _VORNAME_ werden mit den jeweiligen Daten ersetzt)"},
+  {"name":"EMAIL_REMINDER_TEXT","type":"text","value":"Sie haben sich erfolgreich angemeldet!\r\nAls _VORNAME_ _NAME_\r\nVeranstaltung: _EVENT_\r\nVeranstaltungsort: _WO_\r\nDatum und Uhrzeit: _WANN_ \r\n\r\n\r\nEvang. Stadt- und Bezirkskantorat Pforzheim\r\nRennfeldstr. 5\r\n75173 Pforzheim","lable":"EMAIL: Text (_EVENT_, _WANN_, _WO_, _NAME_, _VORNAME_ werden mit den jeweiligen Daten ersetzt)"}
+]

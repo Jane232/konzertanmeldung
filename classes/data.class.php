@@ -1,5 +1,5 @@
 <?php
-require_once 'anmeldung/staticVars.php';
+require_once 'backend/config.php';
 class Dir
 {
     /*

@@ -34,7 +34,7 @@ function show($show)
 }
 function events($titleOfBackend)
 {
-    require("staticVars.php");
+    require("config.php");
     // Auslesen der aktuellen Events und Events mit <br> trennen um jeweils eine neue Zeile zu haben
     $events ="";
     foreach (fileToArray("events.txt") as $key) {
@@ -95,7 +95,7 @@ function events($titleOfBackend)
 }
 function lists($titleOfBackend)
 {
-    require("staticVars.php");
+    require("config.php");
 
     echo "<h1><u>$titleOfBackend</u></h1>";
     if (isset($_POST["send"])) {// Wenn Auswahl der Liste schon getroffen, dann:
@@ -170,7 +170,7 @@ function lists($titleOfBackend)
 
 function deleteList($titleOfBackend)
 {
-    require("staticVars.php");
+    require("config.php");
 
     echo "<h1>$titleOfBackend</h1>";
     if (isset($_POST["delete"])) {// Wenn Auswahl schon getroffen und bestätigt:
@@ -229,11 +229,11 @@ function deleteList($titleOfBackend)
 
 function setup($titleOfBackend)
 {
-    require("staticVars.php");
+    require("config.php");
 
     echo "<h1>$titleOfBackend</h1><br>";
     if (isset($_POST["setupUpdate"])) {
-        foreach (fileToArray("setup.txt") as $line) {
+        foreach (fileToArray("setup.json") as $line) {
             $t = explode("--", $line);
             $label[] = $t[0];
             $varKind[] = $t[1];
@@ -244,11 +244,11 @@ function setup($titleOfBackend)
         for ($i=0; $i < sizeof($label); $i++) {
             $contentString .= ($i < sizeof($label)-1) ? $label[$i]."--".$varKind[$i]."--".$content[$i]."\n" : $label[$i]."--".$varKind[$i]."--".$content[$i];
         }
-        files("setup.txt", $contentString, 'w');
+        files("setup.json", $contentString, 'w');
         echo "<script type='text/javascript'>document.location.href='{$url}';</script>";
     } else {
         $form = '<center><form action="" method="post">';
-        foreach (fileToArray("setup.txt") as $line) {
+        foreach (fileToArray("setup.json") as $line) {
             $t = explode("--", $line);
             //<br> zurück zu Zeilensprüngen
             $t[2] = str_replace('<br>', "\n", $t[2]);
@@ -287,7 +287,7 @@ function setup($titleOfBackend)
 
 function addFrontendUser($titleOfBackend)
 {
-    require("staticVars.php");
+    require("config.php");
     echo "<h1>$titleOfBackend</h1><br>";
     if (isset($_POST["add"])) {
         // an das existierende htpasswd den User-Input appenden
@@ -312,7 +312,7 @@ function addFrontendUser($titleOfBackend)
 }
 function addBackendUser($titleOfBackend)
 {
-    require("staticVars.php");
+    require("config.php");
     echo "<h1>$titleOfBackend</h1><br>";
     if (isset($_POST["add"])) {
         // an das existierende htpasswd den User-Input appenden
@@ -338,7 +338,7 @@ function addBackendUser($titleOfBackend)
 
 function deleteEntry($titleOfBackend)
 {
-    require("staticVars.php");
+    require("config.php");
     echo "<h1><u>$titleOfBackend</u></h1>";
     if (isset($_POST["stimme"])) {
         $json = json_decode(file_get_contents($_POST["event"].".json"), true);
@@ -409,19 +409,19 @@ function deleteEntry($titleOfBackend)
 }
 function inputconfig($titleOfBackend)
 {
-    require("staticVars.php");
+    require("config.php");
 
     if (isset($_POST["deleteField"])) {
         $name = $_POST["deleteField"];
         $nameWithUnderscore = str_replace(' ', '_', $_POST["deleteField"]);
         if (isset($_POST[$nameWithUnderscore.":deleteVerify"])) {
             if ($_POST[$nameWithUnderscore.":deleteVerify"] == $_POST["deleteField"]) {
-                $json = json_decode(file_get_contents("inputfelder.txt"), true);
+                $json = json_decode(file_get_contents("inputfelder.json"), true);
                 if ($_POST[$nameWithUnderscore.":kindOfField"] == "input") {
                     unset($json["input"][$name]);
                     $feedback = '"'.$name.'" wurde erforgreich gelöscht';
                 }
-                files("inputfelder.txt", json_encode($json), 'w');
+                files("inputfelder.json", json_encode($json), 'w');
             }
         } else {
             $feedback = 'Löschen von "'.$_POST["deleteField"].'" wurde nicht bestätigt!'; // FEEDBACK
@@ -446,18 +446,18 @@ function inputconfig($titleOfBackend)
                 }
             }
         }
-        files("inputfelder.txt", json_encode($json), 'w');
+        files("inputfelder.json", json_encode($json), 'w');
     }
     if (isset($_POST["addInput"])) {
         if (!empty($_POST["newInputTilte"])||!empty($_POST["newInputTilte1"])) {
             $title = (!empty($_POST["newInputTilte"]))?$_POST["newInputTilte"]:$_POST["newInputTilte1"];
-            $json = json_decode(file_get_contents("inputfelder.txt"), true);
+            $json = json_decode(file_get_contents("inputfelder.json"), true);
             $json["input"][$title] = array('type'=>'text','required'=>'false','label'=>'');
-            files("inputfelder.txt", json_encode($json), 'w');
+            files("inputfelder.json", json_encode($json), 'w');
         }
     }
     if (!isset($_POST["send"])) {
-        $json = json_decode(file_get_contents("inputfelder.txt"), true);
+        $json = json_decode(file_get_contents("inputfelder.json"), true);
         //Für alle inputs
         echo'<center><h1>'.$titleOfBackend.'</h1><form action="" method="post"><button type="submit" name="send" >Ändern</button>';
         echo "<div style='width: 60%; border: 3px solid var(--c-link); border-radius: 24px; margin: 2em; padding: 1em;' ><h1>Neues Feld hinzufügen</h1>";

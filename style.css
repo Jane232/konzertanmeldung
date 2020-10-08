@@ -229,6 +229,23 @@ button:hover {
   margin-left: 2em;
   padding-bottom: 0.5em;
 }
+.zebraDark{
+  margin: 0 0 3em 0;
+  background-color: #57524c;
+  color: var(--bg);
+  border: 2px solid #57524c;
+  box-shadow: 0px 0px 11px 4px #57524c;
+  border-radius: 1em;
+
+}
+.zebraLight{
+  margin: 0 0 3em 0;
+  background-color: #bbb7af;
+  color: var(--c-h1);
+  border: 2px solid #aaa498;
+  box-shadow: 0px 0px 11px 4px #aaa498;
+  border-radius: 1em;
+}
 /* ################################################################################################## */
 #switch {
   padding-right: 3em;

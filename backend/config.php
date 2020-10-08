@@ -12,22 +12,25 @@
     $url = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? "https://" : "http://";
     $url .= $_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'];
     define_once("URL", $url);
-
-    $sep = DIRECTORY_SEPARATOR;
-    //define("SEP", DIRECTORY_SEPARATOR);
-    define_once("SEP", "/");
+    define_once("SEP", DIRECTORY_SEPARATOR);
 
     $docRoot = $_SERVER["DOCUMENT_ROOT"];
-    $project = "dashboard".SEP."choranmeldung";
-    $backend = "anmeldung";
+    $project = "dashboard".SEP."chor".SEP."anmeldung";
+    $backend = "backend";
     $subfolder = "tabellen";
+    $stock = "stock";
+    $accounts = "accounts";
 
     $linkToRoot = $docRoot.SEP.$project.SEP;
     $linkToBE = $docRoot.SEP.$project.SEP.$backend.SEP;
-    $linkToTab = $docRoot.SEP.$project.SEP.$backend.SEP.$subfolder.SEP;
+    $linkToStock = $docRoot.SEP.$project.SEP.$backend.SEP.$stock.SEP;
+    $linkToAcc = $docRoot.SEP.$project.SEP.$backend.SEP.$accounts.SEP;
 
-    define_once("SUBFOLDER", $subfolder.SEP);
     define_once("ROOT", $linkToRoot);
     define_once("BE", $linkToBE);
-    define_once("TAB", $linkToTab);
+    define_once("STOCK", $linkToStock);
+    define_once("ACCOUNTS", $linkToAcc);
+
+
     define_once("DIR_USER", "users".SEP);
+    define_once("SUBFOLDER", $subfolder.SEP);

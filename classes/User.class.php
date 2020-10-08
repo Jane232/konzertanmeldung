@@ -10,7 +10,7 @@ class User
     }
     public function logIn()
     {
-        $accounts = $this->data->file->lines("anmeldung".SEP."backendAccounts");
+        $accounts = $this->data->file->lines("backend".SEP."backendAccounts");
         foreach ($accounts as $account) {
             $expl = $this->data->str->split("::", $account, 2);
             if (password_verify($this->pwd, $this->data->str->stripWSC($expl[1])) && $expl[0] == $this->user) {

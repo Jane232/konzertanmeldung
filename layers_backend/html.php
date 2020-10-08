@@ -70,10 +70,13 @@ default:
 }
 function html_header()
 {
+    $link = (file_exists("../../Musik-Stempel rund.png")) ? "../../" : "../" ;
+    $name = basename(getcwd());
+
     return'<style>.nav-div{
     width: 80%;
     display: grid;
-    grid-template-columns: auto auto auto auto auto;
+    grid-template-columns: auto auto auto auto;
   }
   .nav-div a{
     margin: 0.6em 1em;
@@ -88,9 +91,8 @@ function html_header()
     }
   }</style>
 <center style="margin: 20px 0 0 0;">
-  <!--LOGO-->
-  <a href="../../"><img src="../../Musik-Stempel rund.png" alt="Logo" ></a>
-  <!--NAV-->
+  <!--LOGO--><a href="'.$link.'"><img src="'.$link.'Musik-Stempel rund.png" alt="Logo" ></a>
+  <!--NAV--><br><h1>'.$name.'</h1>
   <div class="nav-div">
     <a href="index.php?show=events">Events bearbeiten</a>
     <a href="index.php?show=lists">Listen ausgeben</a>
@@ -100,72 +102,25 @@ function html_header()
     <a href="index.php?show=addBackendUser">Nutzer hinzufügen (Backend)</a>
     <a href="index.php?show=deleteEntry">Eintrag Löschen</a>
     <a href="index.php?show=inputconfig">Eingabefelder bearbeiten</a>
-    <a href="index.php?show=logOut">LogOut</a>
+    <!--<a href="index.php?show=logOut">LogOut</a>-->
   </div>
 </center>';
 }
 function html_events()
 {
-    // Auslesen der aktuellen Events und Events mit <br> trennen um jeweils eine neue Zeile zu haben
-    $events ="";
-    foreach (file_lines("events.txt") as $key) {
-        $events .= $key."<br>";
-    }
-    // $_POST["paragraph"] ist nur gesetzt wenn User etwas abgeschickt hat (enthält die (veränderten) Events)
-    if (isset($_POST["paragraph"])) {
-        // Aufspalten an den Zeilen
-        $lines = str_expl('<br>', $_POST["paragraph"]);
-        $content = "";
-        // Über Array iterieren
-        for ($i=0; $i < arr_count($lines)-1; $i++) {
-            // An "-" Spalten
-            $name = str_expl('-', $lines[$i], 2);
-            // Alle whitespace-Chars entfernen die im Namen sind
-            $lineStriped = str_replace(' ', '', str_stripWSC($name[0]))."-".$name[1];
-            //Zusammenfügen mit oder ohne Zeilensprung
-            $content .= (arr_count($lines)-2 > $i) ? $lineStriped."\n" : $lineStriped ;
-        }
-        // Veränderte Events in events.txt schreiben
-        // Alle illegalen Chars, die Probleme verursachen könnten, werden gelöscht
-        file_handle("events.txt", str_replace(array('\\','/',':','*','?','"','<','>','|',','), '', $content));
-        // header(); funktioniert auf dem Server nicht, header-Informationen bereits festgelegt sind und das schwerer zu umgehen ist als einfach JS zu nutzen
-        //reload Page
-        echo "<script type='text/javascript'>document.location.href='{$url}';</script>";
-    }
-    /*
-    Aufbau des Strings:
-      -Überschrift
-      -Bearbeitbarer Paragraph
-      -Unsichtbare FORM, welche von JS versendet wird
-      -Button der Js-Funktion triggert
-      -JS
-        - Funktion
-        {
-          - Inhalt des Paragraphen in Variable speichern
-          - Inhalt des Paragraph-Inputs in der Form mit der Var überschreiben
-          - Form absenden
-        }
-    */
-    echo'<h1>'.TITLE_OF_BACKEND.'</h1>
-     <p contenteditable="true" id="paragraph" style="width:70%; margin: 0 15%; border: 2px solid var(--c-h1); border-radius: 24px;"> '.$events.' </p>
-     <form class="contentForm" action="" method="post" id="create-content" style="">
-       <input type="text" placeholder="paragraph" name="paragraph" id="paragraphForm" required style="display:none;">
-       <input type="text" name="action" value="contentPrepare" required style="display:none;">
-       <button type="submit" name="events" style="display:none;">x</button>
-     </form>
-     <span class="contentForm"><button name="button" onclick="getContent();">Abschicken</button></span>
+    //TODO backend: edit events.
 
-     <script type="text/javascript">
-     "use strict";
-     function getContent() {
-       let paragraph = document.getElementById("paragraph").innerHTML;
-       document.getElementById("paragraphForm").value = paragraph;
-       document.forms["create-content"].submit();
-     }
-     </script>';
+    define_user();
+    $events = process_event_get();
+    foreach ($events as $filename => $event) {
+        html_event_show($event);
+    }
+    echo "Noch in Bearbeitung";
 }
 
-
+function html_event_show($event)
+{
+}
 
 function html_lists()
 {
@@ -173,34 +128,33 @@ function html_lists()
     if (isset($_POST["send"])) {// Wenn Auswahl der Liste schon getroffen, dann:
         // Den Eventnamen aus Event.txt lesen
         $eventName = process_get_validate_event();
-        $linkToEvent = TAB.str_stripWSC($_POST["event"]);
+        $linkToEvent = ROOT.DIR_USER.get_user().SEP.SUBFOLDER.str_stripWSC($_POST["event"]);
         //Überschrift
-        echo "<h1>Teilnehmerliste von $eventName</h1><center>";
+        echo "<h1>Teilnehmerliste von {$_POST["event"]}</h1><center>";
         echo '<br><br><a href="index.php?show=lists">Zurück zur Auswahl</a></center>';
 
-        echo html_show_table($linkToEvent.".json");
+        echo html_show_table($linkToEvent);
     } else { // Wenn noch keine Auswahl für die anzuzeigende Tabelle gesendet wurde:
         // Form mit select und allen Events aus event.txt
         echo '<form action="" method="post">
         <select name="event" required>
         <option label="Konzerte:"></option>';
-        // Events aus event.txt lesen!
-        // TODO events
+        // Events aus event.json lesen!
         // Option-Tag mit Funktion erstellen
         $csv = process_csv_from_events();
+        //var_dump($csv);
         echo xsvToOption(",", $csv["name"], "", $csv["lable"]);
         echo '</select><button type="submit" name="send" >Ausgeben</button></form>';
-        echo html_listFiles(TAB);
+        echo html_listFiles(SUBFOLDER);
     }
 }
 function process_csv_from_events()
 {
     $lable = $name = "";
-    foreach (file_lines("events.txt") as $line) {
+    foreach (file_json_dec(ROOT.DIR_USER.get_user().SEP."events.json") as $key => $tempExpl) {
         // Lable und Name spliten und in verschiedene Variablen
-        $tempExpl = str_expl("-", $line, 2);
-        $name .= $tempExpl[0].",";
-        $lable .= $tempExpl[1].",";
+        $name .= $key.",";
+        $lable .= $tempExpl["titel"]." ( ".$key." ),";
     }
     rtrim($name, ",");
     rtrim($lable, ",");
@@ -219,7 +173,11 @@ function html_deleteList()
 {
     echo "<h1>".TITLE_OF_BACKEND."</h1>";
     if (isset($_POST["delete"])) {// Wenn Auswahl schon getroffen und bestätigt:
-        process_delete_file(TAB.str_stripWSC($_POST["datei"]));
+        if (process_delete_file(SUBFOLDER.str_stripWSC($_POST["datei"]))) {
+            $feedback = "Datei erforgreich gelöscht";
+        } else {
+            $feedback = "Fehler beim löschen!";
+        }
         // Zurück-Link
         echo "<center>".$feedback."<br><br><a href='index.php?show=deleteList'>Zurück zum Listen-löschen</a><br></center>";
     } elseif (isset($_POST["send"])) { // Wenn Auswahl schon getroffen und noch nicht bestätigt:
@@ -232,7 +190,7 @@ function html_deleteList()
     } elseif (isset($files)) {
     } else {
         // Anzeigen der verbliebenen Dateien
-        $filesInDir = dir_listFiles(TAB);
+        $filesInDir = dir_listFiles(SUBFOLDER);
         $files = "";
         foreach ($filesInDir as $file) {
             $files .= (!empty($files)) ? ",".$file : $file ;
@@ -245,46 +203,46 @@ function html_deleteList()
             echo "<center>Keine Dateien mehr verfügbar!</center>";
         }
     }
-    echo html_listFiles(TAB);
+    echo html_listFiles(SUBFOLDER);
 }
 
 function html_setup()
 {
     echo "<h1>".TITLE_OF_BACKEND."</h1><br>";
     if (isset($_POST["setupUpdate"])) {
-        foreach (file_lines("setup.txt") as $line) {
-            $t = str_expl("--", $line);
-            $label[] = $t[0];
-            $varKind[] = $t[1];
+        $settings = process_read_setup(true);
+        $setup = array();
+        foreach ($settings as $line) {
+            $label = $line[0];
+            $varKind = $line[1];
             // Zeilenbrüche durch <br> ersetzten
-            $content[] = rtrim(preg_replace("/\r\n|\r|\n/", '<br>', $_POST[$t[0]]), "<br>");
+            //$content = rtrim(preg_replace("/\r\n|\r|\n/", '<br>', $_POST[$line[0]]), "<br>");
+            $content = $_POST[$line[0]];
+            $lable = $line[3];
+            $setup[] = array("name" =>$label,"type" => $varKind,"value" =>$content,"lable" => $lable);
         }
-        $contentString = "";
-        for ($i=0; $i < arr_count($label); $i++) {
-            $contentString .= ($i < arr_count($label)-1) ? $label[$i]."--".$varKind[$i]."--".$content[$i]."\n" : $label[$i]."--".$varKind[$i]."--".$content[$i];
-        }
-        file_handle("setup.txt", $contentString);
-        echo "<script type='text/javascript'>document.location.href='{$url}';</script>";
+        file_json_enc("setup.json", $setup);
+        echo "<script type='text/javascript'>document.location.href='".URL."';</script>";
     } else {
         $form = '<center><form action="" method="post">';
-        foreach (file_lines("setup.txt") as $line) {
-            $t = str_expl("--", $line);
+        $settings = process_read_setup(true);
+        foreach ($settings as $line) {
             //<br> zurück zu Zeilensprüngen
-            $t[2] = str_replace('<br>', "\n", $t[2]);
-            switch ($t[1]) {
+            $line[2] = str_replace('<br>', "\n", $line[2]);
+            switch ($line[1]) {
           case 'int':
-            $form .= "<label for=".$t[0]." style='align:center;'>".$t[0]."</label> <input type='number' name=".$t[0]." value=".$t[2].">";
+            $form .= "<label for=".$line[0]." style='align:center;'>".$line[3]." (".$line[0].")</label> <input type='number' name=".$line[0]." value=".$line[2].">";
             break;
           case 'text':
             // Berechnung für die Höhe der textarea
             //temp ist ca. die Zeilenanzahl gemessen an der Zeichenanzahl
-            $temp = ceil(strlen($t[2])/70)."em";
+            $temp = ceil(strlen($line[2])/70)."em";
             // Wird dann als Style in den String geschrieben
             $height = "height: calc($temp + 50px + 1em);";
-            $form .= "<label for=".$t[0]." style='align:center;'>$t[0]</label><div id='tArea'> <textarea class='auto-resize' style='$height'  name=$t[0]>$t[2]</textarea></div>";
+            $form .= "<label for=".$line[0]." style='align:center;'>".$line[3]." (".$line[0].")</label><div id='tArea'> <textarea class='auto-resize' style='$height'  name=$line[0]>$line[2]</textarea></div>";
             break;
           default:
-            $form .= "<label for=".$t[0]." style='align:center;'>".$t[0]."</label><input type='text' name=".$t[0]." value='".$t[2]."'>";
+            $form .= "<label for=".$line[0]." style='align:center;'>".$line[3]." (".$line[0].")</label><input type='text' name=".$line[0]." value='".$line[2]."'>";
             break;
         }
         }
@@ -304,12 +262,13 @@ function html_setup()
     }
 }
 
-function html_addFrontendUser()
+function html_addBackendUser()
 {
     echo "<h1>".TITLE_OF_BACKEND."</h1><br>";
+    $link = (file_exists("../../Musik-Stempel rund.png")) ? "../../" : "../" ;
     if (isset($_POST["add"])) {
         // an das existierende htpasswd den User-Input appenden
-        file_handle("..".$sep.'.htpasswd', $_POST["user"], 'a');
+        file_handle(ACCOUNTS.'.htpasswd', $_POST["user"], 'a');
         echo '<center>User erfolgreich hinzugefügt!</center>';
     } else {
         // Form mit einem input
@@ -321,20 +280,20 @@ function html_addFrontendUser()
     }
     echo'<div style="margin: 3em 20%;"> Folgende Nutzer sind registriert:<ul style="margin: 0.8em 1em;">';
     // Alle existierenden User Ausgeben (aus Htpasswd lesen)
-    foreach (file_lines("..".SEP.".htpasswd") as $line) {
+    foreach (file_lines(ACCOUNTS.".htpasswd") as $line) {
         // An ":" spalten und nur namen ausgeben
         $t = str_expl(":", $line);
         echo "<li>".$t[0]."</li>";
     }
     echo"</ul></div>";
 }
-function html_addBackendUser()
+function html_addFrontendUser()
 {
     echo "<h1>".TITLE_OF_BACKEND."</h1><br>";
     if (isset($_POST["add"])) {
         // an das existierende htpasswd den User-Input appenden
         $writeString = str_stripLenght($_POST["user"])."::".password_hash(str_stripLenght($_POST["password"]), PASSWORD_DEFAULT)."\n";
-        file_handle('backendAccounts', $writeString, 'a');
+        file_handle(ACCOUNTS.'frontendAccounts', $writeString, 'a');
         echo '<center>User erfolgreich hinzugefügt!</center>';
     } else {
         // Form mit einem input
@@ -345,7 +304,7 @@ function html_addBackendUser()
     }
     echo'<div style="margin: 3em 20%;"> Folgende Nutzer sind registriert:<ul style="margin: 0.8em 1em;">';
     // Alle existierenden User Ausgeben (aus Htpasswd lesen)
-    foreach (file_lines("backendAccounts") as $line) {
+    foreach (file_lines(ACCOUNTS."frontendAccounts") as $line) {
         // An ":" spalten und nur namen ausgeben
         $t = str_expl("::", $line);
         echo "<li>".$t[0]."</li>";
@@ -369,13 +328,11 @@ function html_deleteEntry()
     if (isset($_POST["send"])) {// Wenn Auswahl der Liste schon getroffen, dann:
 
         // Den Eventnamen aus Event.txt lesen
-        foreach (file_lines('events.txt') as $line) {
-            $t = str_expl("-", $line, 2);// An "-" Spalten
-            if ($t[0] == $_POST["event"]) { //Nur den ausgewählten Namen speichern
-                $eventName = $t[1];
-            }
+        $events = file_json_dec("events.json");
+        if (($array = process_event_get_by_key($events, $_POST["event"])) !== false) {
+            $eventName = process_event_get_param($array, "titel");
         }
-        $linkToEvent = TAB.str_stripWSC($_POST["event"]);
+        $linkToEvent = SUBFOLDER.str_stripWSC($_POST["event"]);
 
         //Überschrift
         echo "<h1>Teilnehmerliste von $eventName</h1><center>";
@@ -384,13 +341,13 @@ function html_deleteEntry()
             $json = file_json_dec($linkToEvent.".json");
             // Tabelle mit alle Werten erstellen
             echo '<center>';
-            $stimmen = array("Sopran","Alt","Tenor","Bass");
-            foreach ($stimmen as $stimme) {
+            $gruppen = process_event_get_groups_of_json(file_json_dec("events.json"));
+            foreach ($gruppen as $gruppe) {
                 echo '<form action="" method="post"><table style="width:60%;">
               <input type="text" name="event" style="display:none;" value="'.$linkToEvent.'">
-              <input type="text" name="stimme" style="display:none;" value="'.$stimme.'">';
-                echo"<tr><td style='text-align:center'>$stimme:</td></tr>";
-                foreach ($json[$stimme] as $number =>$array) {
+              <input type="text" name="stimme" style="display:none;" value="'.$gruppe.'">';
+                echo"<tr><td style='text-align:center'>$gruppe:</td></tr>";
+                foreach ($json[$gruppe] as $number =>$array) {
                     echo"<tr><td></td>";
                     foreach ($array as $bezeichnug =>$wert) {
                         echo"<td style='text-align:center'>$wert</td>";
@@ -408,18 +365,8 @@ function html_deleteEntry()
         echo (isset($feedback))?"<br><h1>".$feedback."</h1><br>":"";
         echo '<form action="" method="post"><select name="event" required><option label="Konzerte:"></option>';
         // Events aus event.txt lesen!
-        $lable = $nr = "";
-        foreach (file_lines("events.txt") as $line) {
-            // für richtige Komma-Setzung
-            $lable .= ($lable != "") ? "," : "";
-            $nr .= ($nr != "") ? "," : "";
-            // Lable und Name spliten und in verschiedene Variablen
-            $t = str_expl("-", $line, 2);
-            $nr .= $t[0];
-            $lable .= $t[1];
-        }
-        // Option-Tag mit Funktion erstellen
-        echo xsvToOption(",", $nr, "", $lable);
+        $csv = process_csv_from_events();
+        echo xsvToOption(",", $csv["name"], "", $csv["lable"]);
         echo '</select><button type="submit" name="send" >Ausgeben</button></form>';
     }
 }
@@ -430,12 +377,12 @@ function html_inputconfig()
         $nameWithUnderscore = str_replace(' ', '_', $_POST["deleteField"]);
         if (isset($_POST[$nameWithUnderscore.":deleteVerify"])) {
             if ($_POST[$nameWithUnderscore.":deleteVerify"] == $_POST["deleteField"]) {
-                $json = file_json_dec("inputfelder.txt");
+                $json = file_json_dec("inputfelder.json");
                 if ($_POST[$nameWithUnderscore.":kindOfField"] == "input") {
                     unset($json["input"][$name]);
                     $feedback = '"'.$name.'" wurde erforgreich gelöscht';
                 }
-                file_handle("inputfelder.txt", json_encode($json));
+                file_handle("inputfelder.json", json_encode($json));
             }
         } else {
             $feedback = 'Löschen von "'.$_POST["deleteField"].'" wurde nicht bestätigt!'; // FEEDBACK
@@ -460,18 +407,18 @@ function html_inputconfig()
                 }
             }
         }
-        file_handle("inputfelder.txt", json_encode($json));
+        file_handle("inputfelder.json", json_encode($json));
     }
     if (isset($_POST["addInput"])) {
         if (!empty($_POST["newInputTilte"])||!empty($_POST["newInputTilte1"])) {
             $title = (!empty($_POST["newInputTilte"]))?$_POST["newInputTilte"]:$_POST["newInputTilte1"];
-            $json = file_json_dec("inputfelder.txt");
+            $json = file_json_dec("inputfelder.json");
             $json["input"][$title] = array('type'=>'text','required'=>'false','label'=>'');
-            file_handle("inputfelder.txt", json_encode($json));
+            file_handle("inputfelder.json", json_encode($json));
         }
     }
     if (!isset($_POST["send"])) {
-        $json = file_json_dec("inputfelder.txt");
+        $json = file_json_dec("inputfelder.json");
         //Für alle inputs
         echo'<center><h1>'.TITLE_OF_BACKEND.'</h1><form action="" method="post"><button type="submit" name="send" >Ändern</button>';
         echo "<div style='width: 60%; border: 3px solid var(--c-link); border-radius: 24px; margin: 2em; padding: 1em;' ><h1>Neues Feld hinzufügen</h1>";
@@ -521,11 +468,11 @@ function html_inputconfig()
 function html_show_table($link)
 {
     if (!file_check($link.".json")) {// Wenn Tabelle existiert, dann
-        return "<center>Diese Tabelle ($eventName) existiert noch nicht <br>keine Einträge im Ordner $eventName<br><br> <a href='index.php?show=lists'>Zurück zur Listenübersicht</a></center>";
+        return "<center>Diese Tabelle ({$_POST['event']}) existiert noch nicht <br>keine Einträge im Ordner {$_POST['event']}<br><br> <a href='index.php?show=lists'>Zurück zur Listenübersicht</a></center>";
     }
     //download-Link
     $json = file_json_dec($link.".json");
-    process_write_csv_file($json, $link.".csv");
+    process_write_csv_file($json, $link);
     $ret = '<center><a href="'.$link.'.csv" style="font-size: 0.8em;" download>.CSV-Datei zum download</a></center>';
 
     // öffnet die .CSV
