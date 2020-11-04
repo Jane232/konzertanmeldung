@@ -29,14 +29,9 @@ function html_initialize_setup_var()
 }
 function html_define_group()
 {
-    if (isset($_SESSION["EVENT_ART"])) {
-        if ($_SESSION["EVENT_ART"] == "Stimmbildung") {
-            define_group("Stimmbildung");
-            return true;
-        }
-    }
     if (isset($_POST["stimme"])) {
         define_group($_POST["stimme"]);
+        $_SESSION["group"] = $_POST["stimme"];
         return true;
     } else {
         return false;
@@ -85,8 +80,8 @@ function html_bereits_eingetragen(string $LTE_JSON)
         $json_table = file_json_dec($LTE_JSON);
         $ret .= "Bereits eingetragen:";
         $ret .="<ul style='list-style:none;'>";
-        foreach ($json_table[GROUP] as $key =>$name) {
-            $ret .= "<li>".$json_table[GROUP][$key]["Vorname"]." ".$json_table[GROUP][$key]["Name"]."</li>";
+        foreach ($json_table[$_SESSION["group"]] as $key =>$name) {
+            $ret .= "<li>".$json_table[$_SESSION["group"]][$key]["Vorname"]." ".$json_table[$_SESSION["group"]][$key]["Name"]."</li>";
         }
         $ret .= '</ul>';
     } else {
@@ -155,12 +150,16 @@ function html_construct_Input_Form_register()
     $json = process_event_get();
     $filteredJSON= process_event_filter($json, "art", $_SESSION["EVENT_ART"]);
     $groups = process_event_get_groups_of_json($filteredJSON);
+
     if (arr_count($groups)>1) {
         $groupsCSV = arr_to_csv_line($groups);
         $ret .='<select name="stimme" required>
               <option label="Stimme auswählen:"></option>';
         $ret .= xsvToOption(",", $groupsCSV);
         $ret .='</select>';
+    } else {
+        $stimme = (is_array($groups)) ? $groups[0] : $groups ;
+        $ret .= '<input type="text" name="stimme" value="'.$stimme.'" style="display:none;"/>';
     }
 
     $ret .='<button type="submit" name="chooseEvent">Weiter</button>
@@ -172,7 +171,7 @@ function html_event_form_list()
     $jsonInputfelder = file_json_dec(UBE."inputfelder.json");
 
     $ret ='<form class="input-box" action="dataSent.php" method="post">';
-    $ret .=(defined("GROUP")) ?'<input type="text" name="stimme" style="display:none;" value="'.GROUP.'">':'';
+    $ret .=(isset($_SESSION["group"])) ?'<input type="text" name="stimme" style="display:none;" value="'.$_SESSION["group"].'">':'';
     $ret .= html_form_input_hidden_with_values();
     $json = process_event_get();
     $filteredJSON= process_event_filter($json, "art", $_SESSION["EVENT_ART"]);
@@ -188,9 +187,10 @@ function html_event_form_list()
     }
     $zähler = 0;
     if (arr_count($filteredJSON) == 0) {
-        $ret .= "Mit diesem Filter-Einstellung sind keine Ereignisse verfügbar";
+        $ret .= "Mit dieser Filter-Einstellung sind keine Ereignisse verfügbar";
         return $ret .= "</form>\n";
     }
+
     foreach ($filteredJSON as $key) {
         $zebra = html_event_list_given($key);
         if (!empty($zebra)) {
@@ -200,15 +200,12 @@ function html_event_form_list()
             $zähler += 1;
         }
     }
+    $ret .= ($zähler == 0) ? "Mit dieser Filter-Einstellung sind keine Ereignisse verfügbar" : "" ;
     return $ret .= "</form>\n";
 }
 function setValueToJSON($event)
 {
     $LTE_JSON = UBE.SUBFOLDER.$event.".json";
-
-    if (!check_Event_available($LTE_JSON, $event)) {
-        return DEF_TEXT_FAIL;
-    }
     return (update_data_Eventlists($LTE_JSON))?DEF_TEXT_SUCCESS:"Fehler beim schreiben in JSON";
 }
 
@@ -283,6 +280,7 @@ function html_show_site()
         echo (isset($_POST["stimme"]))?'<h1>'.$_POST["stimme"].':</h1>':'';
         echo '<br><div style="color:white;">';
         echo html_list_event_date_selector();
+        echo html_list_event_hide_full_events_selector();
         echo html_event_form_list();
         echo'</div>';
     } else {
@@ -331,17 +329,42 @@ function html_list_event_date_selector()
             </form>';
     return $ret;
 }
+
+function html_list_event_hide_full_events_selector()
+{
+    $name = "hide_full_events";
+    $button= "Volle Events ausblenden";
+    if (isset($_POST["hide_full_events"])) {
+        $button = 'Volle Events anzeigen';
+        $name = "show_full_events";
+    } elseif (isset($_POST["show_full_events"])) {
+        $button = 'Volle Events ausblenden';
+        $name = "hide_full_events";
+    }
+    $ret = '<form action="" method="post" style="width: 50%;">';
+    $ret .= html_form_input_hidden_with_values();
+    $ret .= '<input style="display:none;" name="'.$name.'" >';
+    $ret .= '<button type="submit" name="chooseEvent">'.$button.'</button>';
+    $ret .= '</form>';
+    return $ret;
+}
 function html_event_list_given(array $json)
 {
     if (!process_event_check_if_open($json)) {
         return ;
     }
+
     global $LTE_JSON;
+
     $eventKey = process_event_get_param($json, "dateiname");
     $LTE_JSON = UBE.SUBFOLDER.$eventKey.".json";
     check_write_new_Event($LTE_JSON, $eventKey);
     $jsonEvents = process_event_get();
     $jsonEvent = $jsonEvents[$eventKey];
+    if (isset($_POST["hide_full_events"]) && !check_Event_available($LTE_JSON, process_event_get_param($jsonEvent, "dateiname"))) {
+        return;
+    }
+
     $ret = "";
     $ret .= "<h2 style='font-weight: bold;'>".process_event_get_param($jsonEvent, "titel")."</h2>";
     if (!empty(process_event_get_param($jsonEvent, "beginn"))) {
@@ -374,10 +397,12 @@ function html_mail_init_event_reminder($email, $event, $start, $where, $name = "
     $firstname = " ".$firstname." ";
     $name = " ".$name." ";
 
+    $text = DEF_EMAIL_REMINDER_TEXT;
     $text = str_replace($vorlage_event, $event, $text);
     $text = str_replace($vorlage_wann, $start, $text);
     $text = str_replace($vorlage_wo, $where, $text);
     $text = str_replace($vorlage_vorname, $firstname, $text);
+    $text = str_replace($vorlage_name, $name, $text);
 
     $betreff = DEF_EMAIL_REMINDER_BETREFF;
     $betreff = str_replace($vorlage_event, $event, $betreff);

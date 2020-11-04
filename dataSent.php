@@ -28,14 +28,17 @@ html_initialize_setup_var();
     <?php
         define_user();
         html_define_group();
+        $emailFeedback = $feedback="";
         if (isset($_POST["event"])) {
-            $feedback = setValueToJSON($_POST["event"]);
             if (!check_entry_existing()) {
-                $feedback = setValueToJSON($_POST["event"]);
-                $emailFeedback = (html_mail_send_event_reminder())?"Es wurde erfolgreich eine Bestätigungsemail an Sie versand":"Es gab einen Fehler beim E-Mail-Versand";
+                if (check_Event_available(UBE.SUBFOLDER.$_POST["event"].".json", $_POST["event"])) {
+                    $feedback = setValueToJSON($_POST["event"]);
+                    $emailFeedback = (html_mail_send_event_reminder())?"Es wurde erfolgreich eine Bestätigungsemail an Sie versandt.":"Es gab einen Fehler beim E-Mail-Versandt";
+                } else {
+                    $feedback = DEF_TEXT_FAIL;
+                }
             } else {
                 $feedback = DEF_TEXT_ENTRYEXISTED;
-                $emailFeedback = "Es wurde keine E-Mail versand!";
             }
             echo "<div style='margin-top:3em;'><h1><u><b>$feedback</b></u></h1></div>";
             echo $emailFeedback;

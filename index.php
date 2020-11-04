@@ -30,7 +30,6 @@ html_initialize_setup_var();
     <center style="margin: 2em 10%;">
     <a href="http://www.musik.stadtkirche-pforzheim.de"><img src="Musik-Stempel rund.png" alt="Logo" ></a>
     <?php
-        //dump(process_event_import_csv("events.json", "events/severEvents.csv"));
         html_user_authentication();
         if (!check_user_login()) {
             exit();

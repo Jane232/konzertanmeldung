@@ -243,7 +243,20 @@ function arr_to_csv_line(array $array)
     }
     return rtrim($csv, ",");
 }
+function csv_to_array($csv)
+{
+    $lines = explode(PHP_EOL, $csv);
+    if (arr_count($lines)>1) {
+        $array = array();
+        foreach ($lines as $line) {
+            $array[] = str_getcsv($line);
+        }
+    } else {
+        return str_getcsv($csv);
+    }
 
+    return $array;
+}
 function dump($val)
 {
     var_dump($val);

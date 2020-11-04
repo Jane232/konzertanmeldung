@@ -10,7 +10,7 @@
   {"name":"fu\u00dfzeile","type":"text","value":" Stadt- und Bezirkskantorat Pforzheim | Rennfeldstra\u00dfe 5 75173 Pforzheim \r\n\u003Ca href=\"mailto:info@musik.stadtkirche-pforzheim.de\"\u003Einfo@musik.stadtkirche-pforzheim.de\u003C\/a\u003E | Tel: 07231 280 11 35","lable":"Text unter der Anmeldung"},
   {"name":"text_Success","type":"string","value":"Erfolgreich eingetragen!","lable":"Text bei erfolgreichem Registrieren"},
   {"name":"text_Fail","type":"string","value":"Leider ist die gew\u00fcnschte Probe schon ausgebucht.","lable":"Text bei fehlgeschlagenen Registrieren"},
-  {"name":"text_entryexisted","type":"string","value":"Sie wurden bei diesem Event bereits eingetragen. Klicken sie unten um wieder zur Startseite zu gelangen.","lable":"Text bei versuchter Doppelanmeldung"},
+  {"name":"text_entryexisted","type":"string","value":"Sie wurden bei diesem Event bereits eingetragen. Klicken Sie unten, um wieder zur Startseite zu gelangen.","lable":"Text bei versuchter Doppelanmeldung"},
   {"name":"maxInputLenght","type":"int","value":"512","lable":"Nutzereingaben nach X Zeichen abscheiden (Sicherheit)"},
   {"name":"freischalten_ab","type":"string","value":"7 days 18 hours","lable":"Events standartm\u00e4\u00dfig X vorher \u00f6ffentlich machen"},
   {"name":"freischalten_bis","type":"string","value":"3 hours","lable":"Events standartm\u00e4\u00dfig X vor dem Beginn aus der \u00d6ffentlichkeit nehmen"},

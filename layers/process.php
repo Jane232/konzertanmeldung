@@ -26,6 +26,7 @@ function check_write_new_Event(string $LTE_JSON, string $name)
             return false;
         }
         $groupsOfActualEvent = process_event_get_groups($actualJSONEvent);
+
         $newJSON = array();
         foreach ($groupsOfActualEvent as $gruppe) {
             $newJSON[$gruppe] = array();
@@ -108,7 +109,7 @@ function update_data_Eventlists($LTE_JSON)
 function add_data_Eventlists($LTE_JSON, $allInputs)
 {
     $jsonContent = file_json_dec($LTE_JSON);
-    $jsonContent[GROUP][] = $allInputs;
+    $jsonContent[$_SESSION["group"]][] = $allInputs;
     return (file_json_enc($LTE_JSON, $jsonContent) === false) ?false : true;
 }
 function user_logout()
@@ -139,17 +140,17 @@ function calc_maxZuschauer($eventKey)
     $events=process_event_get();
     $event = $events[$eventKey];
     foreach ($event["gruppen"] as $gruppe) {
-        if ($gruppe["name"]==GROUP) {
+        if ($gruppe["name"]==$_SESSION["group"]) {
             return (int) $gruppe["size"];
         }
     }
-    $varName = switchGroup(GROUP);
+    $varName = switchGroup($_SESSION["group"]);
     return (int) (isset($$varName))?$$varName:DEF_MAXZUSCHAUER;
 }
 function calc_slots_used($LTE_JSON)
 {
     $jsonContent = file_json_dec($LTE_JSON);
-    return (int) sizeof($jsonContent[GROUP]);
+    return (int) sizeof($jsonContent[$_SESSION["group"]]);
 }
 function calc_slots_left(string $LTE_JSON, string $eventKey)
 {
@@ -273,7 +274,7 @@ function process_event_get_by_key(array $json, string $key)
     if (!isset($json[$key])) {
         foreach ($json as $nr => $arr) {
             if (isset($arr[$key])) {
-                dump($arr[$key]);
+                //dump($arr[$key]);
             }
         }
         return false;
@@ -352,34 +353,19 @@ function process_event_check_if_key_Val($json)
 
 
 
-function process_event_import_csv_groups_ret($line, $name)
+function process_event_import_create_groups($anzahl, $gruppenName)
 {
-    if (str_count($line)<1) {
-        return false;
-    } else {
-        $line = (int) $line;
-    }
+    $line = (str_count($anzahl)<1) ? 0 : (int) $anzahl;
     if (is_int($line)) {
-        return array("name"=>$name,"size"=>$line);
+        return array("name"=>$gruppenName,"size"=>$anzahl);
     }
 }
-function process_event_import_init_csv_groups($line)
+
+function process_event_import_init_csv_groups($line, $legende)
 {
     $json = array();
-    if (($temp = process_event_import_csv_groups_ret($line[6], "Sopran")) !== false) {
-        $json[] = $temp;
-    }
-    if (($temp = process_event_import_csv_groups_ret($line[7], "Alt")) !== false) {
-        $json[] = $temp;
-    }
-    if (($temp = process_event_import_csv_groups_ret($line[8], "Tenor")) !== false) {
-        $json[] = $temp;
-    }
-    if (($temp = process_event_import_csv_groups_ret($line[9], "Bass")) !== false) {
-        $json[] = $temp;
-    }
-    if (($temp = process_event_import_csv_groups_ret($line[10], "Stimmbildung")) !== false) {
-        $json[] = $temp;
+    foreach ($legende as $nr => $value) {
+        $json[] = process_event_import_create_groups($line[$nr+7], $value);
     }
     return $json;
 }
@@ -393,12 +379,14 @@ function process_event_import_create_csv_filename($line)
 function process_event_import_init_csv_open($line)
 {
     $dateFromCSV = $line[2]." ".$line[3];
-
-    $date= date_create_from_format("d.m.Y H:i", $dateFromCSV);
-    $ab = date_sub($date, date_interval_create_from_date_string(DEF_FREISCHALTEN_AB));
+    if (empty($line[6])) {
+        $date= date_create_from_format("d.m.Y H:i", $dateFromCSV);
+        $ab = date_sub($date, date_interval_create_from_date_string(DEF_FREISCHALTEN_AB));
+    } else {
+        $ab= date_create_from_format("d.m.Y H:i", $line[6]." 08:00");
+    }
     $date=date_create_from_format("d.m.Y H:i", $dateFromCSV);
     $bis = date_sub($date, date_interval_create_from_date_string(DEF_FREISCHALTEN_BIS));
-
     return array($ab, $bis);
 }
 function process_event_check_if_open($event)
@@ -406,7 +394,8 @@ function process_event_check_if_open($event)
     $now = date("Y-m-d H:i", time());
     $overParam = process_event_get_param($event, "beginn");
     $over = date("Y-m-d H:i", strtotime($overParam));
-    if ($now >= $over) {
+
+    if ($now > $over) {
         return false;
     }
     $ab = process_event_get_param($event, "freigeschaltet-ab");
@@ -416,15 +405,16 @@ function process_event_check_if_open($event)
 function process_event_between_date($ab, $bis, $between = "now")
 {
     $ab = date("Y-m-d H:i", strtotime($ab));
-    $bis = date("Y-m-d H:i", strtotime($bis));
+    $bis = date_add(date_create($bis), date_interval_create_from_date_string("1 day"));
+    $bis = date_format($bis, "Y-m-d H:i");
     $between = date("Y-m-d H:i", (($between === "now")?time():strtotime($between)));
-    if (($between >= $ab) && ($between <= $bis)) {
+    if (($between > $ab) && ($between < $bis)) {
         return true;
     } else {
         return false;
     }
 }
-function process_event_create_csv(string $linkToCsV)
+function process_event_create_csv(string $linkToCsV, array $legende)
 {
     $dataArray = file_csv_array($linkToCsV);
     //löschen der 1. 2 zeilen
@@ -441,7 +431,7 @@ function process_event_create_csv(string $linkToCsV)
         $tempJson["beginn"]=$line[2]." ".$line[3];
         $tempJson["dauer"]=$line[4];
         $tempJson["ort"]=$line[5];
-        $tempJson["gruppen"]=process_event_import_init_csv_groups($line);
+        $tempJson["gruppen"]=process_event_import_init_csv_groups($line, $legende);
         $open = process_event_import_init_csv_open($line);
         $tempJson["freigeschaltet-ab"]= $open[0];
         $tempJson["freigeschaltet-bis"]= $open[1];
@@ -457,9 +447,9 @@ function process_calc_timestamp_now()
 {
     return strtotime("now");
 }
-function process_event_import_csv(string $linkToEvent, string $linkToCsV, bool $add = false)
+function process_event_import_csv(string $linkToEvent, string $linkToCsV, array $legende, bool $add = false)
 {
-    $json = process_event_create_csv($linkToCsV);
+    $json = process_event_create_csv($linkToCsV, $legende);
     if ($add) {
         $altesJSON = file_json_dec($linkToEvent);
         $json = array_merge($altesJSON, $json);
@@ -471,8 +461,9 @@ function process_event_import_csv(string $linkToEvent, string $linkToCsV, bool $
 function process_mail_send($to, $subject, $message, $from = "webseite@musik.stadtkirche-pforzheim.de")
 {
     $message = wordwrap($message, 70, "\r\n");
-    $header = "From: Webseite Musik.stadtkirche-pforzheim<{$from}>\r\n";
+    $header = "From: Anmeldung von musik.stadtkirche<{$from}>\r\n";
     $header .= "Reply-To: {$from}\r\n";
-    $header .= "Content-Type: text/html\r\n";
+    $header .= "Content-Type: text/html; charset=utf-8\r\n";
+    $subject = "=?utf-8?b?".base64_encode($subject)."?=";
     return mail($to, $subject, $message, $header);
 }
